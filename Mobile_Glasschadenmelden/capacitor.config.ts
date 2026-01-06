@@ -1,34 +1,28 @@
-import { CapacitorConfig } from '@capacitor/cli'
+import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'de.glasschadenmelden.app',
+  appId: 'com.glasschadenmelden.mobile',
   appName: 'Glasschaden Melden',
   webDir: 'out',
   server: {
     androidScheme: 'https',
+    iosScheme: 'https'
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
-      backgroundColor: '#4F46E5',
-      showSpinner: false,
-      androidScaleType: 'CENTER_CROP',
+      backgroundColor: '#3B82F6',
+      showSpinner: false
     },
     StatusBar: {
-      style: 'DARK',
-      backgroundColor: '#4F46E5',
+      style: 'light',
+      backgroundColor: '#3B82F6'
     },
     Keyboard: {
-      resize: 'body',
-      resizeOnFullScreen: true,
-    },
-  },
-  ios: {
-    contentInset: 'automatic',
-  },
-  android: {
-    allowMixedContent: true,
-  },
-}
+      resize: 'native',
+      style: 'dark'
+    }
+  }
+};
 
-export default config
+export default config;

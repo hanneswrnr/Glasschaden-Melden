@@ -10,8 +10,9 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Primärfarben gemäß Design Tokens
         primary: {
-          DEFAULT: '#4F46E5',
+          DEFAULT: '#4F46E5', // Indigo-600
           50: '#EEF2FF',
           100: '#E0E7FF',
           200: '#C7D2FE',
@@ -23,33 +24,46 @@ const config: Config = {
           800: '#3730A3',
           900: '#312E81',
         },
+        // Erfolg
         success: {
-          DEFAULT: '#10B981',
+          DEFAULT: '#10B981', // Emerald-500
           50: '#ECFDF5',
           500: '#10B981',
           600: '#059669',
         },
+        // Text
         text: {
-          DEFAULT: '#0F172A',
-          muted: '#64748B',
+          DEFAULT: '#0F172A', // Slate-900
+          muted: '#64748B', // Slate-500
         },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
-      // Mobile-optimierte Spacing
-      spacing: {
-        'safe-top': 'env(safe-area-inset-top)',
-        'safe-bottom': 'env(safe-area-inset-bottom)',
-        'safe-left': 'env(safe-area-inset-left)',
-        'safe-right': 'env(safe-area-inset-right)',
+      // Full-Width Layout Support
+      maxWidth: {
+        'screen-full': '100%',
+        'screen-2xl': '1920px',
       },
-      // Minimum Touch Target Size (44px)
-      minHeight: {
-        'touch': '44px',
+      // Animations
+      keyframes: {
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'slide-in': {
+          '0%': { transform: 'translateY(-10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        'skeleton-pulse': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
+        },
       },
-      minWidth: {
-        'touch': '44px',
+      animation: {
+        'fade-in': 'fade-in 0.2s ease-out',
+        'slide-in': 'slide-in 0.3s ease-out',
+        'skeleton': 'skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
     },
   },

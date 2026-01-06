@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 210 40% 98%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --border: 214.3 31.8% 91.4%;
+    --radius: 0.75rem;
+
+    /* iOS Safe Areas */
+    --safe-area-top: env(safe-area-inset-top);
+    --safe-area-bottom: env(safe-area-inset-bottom);
+    --safe-area-left: env(safe-area-inset-left);
+    --safe-area-right: env(safe-area-inset-right);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    /* Prevent pull-to-refresh on iOS */
+    overscroll-behavior: none;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* Mobile-optimierter Text */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Prevent text selection on mobile */
+    -webkit-user-select: none;
+    user-select: none;
+    /* Safe Area Padding */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Allow text selection in inputs */
+  input, textarea {
+    -webkit-user-select: auto;
+    user-select: auto;
+  }
+}
+
+@layer utilities {
+  /* Mobile Touch Target (min 44px) */
+  .touch-target {
+    @apply min-h-touch min-w-touch;
+  }
+
+  /* Safe Area Aware Padding */
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .pt-safe {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+
+  /* Disable bounce scroll */
+  .no-bounce {
+    overscroll-behavior: none;
+  }
+
+  /* Native-like active state */
+  .active-scale {
+    @apply active:scale-95 transition-transform;
+  }
+}
+
+/* iOS-style Tab Bar */
+.tab-bar {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Skeleton Animation */
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-skeleton {
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

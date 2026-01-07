@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PublicHeader } from '@/components/shared/PublicHeader'
 import { PublicFooter } from '@/components/shared/PublicFooter'
+import { getSupabaseClient } from '@/lib/supabase/client'
 
 interface FAQItem {
   question: string
@@ -39,10 +40,44 @@ const faqs: FAQItem[] = [
 
 export default function InfoPage() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const supabase = getSupabaseClient()
+
+  useEffect(() => {
+    checkAuth()
+  }, [])
+
+  async function checkAuth() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      if (profile?.role) {
+        setUserRole(profile.role)
+      }
+    }
+  }
+
+  // Get dashboard URL based on role
+  const getDashboardUrl = () => {
+    switch (userRole) {
+      case 'admin':
+        return '/admin'
+      case 'versicherung':
+        return '/versicherung'
+      case 'werkstatt':
+        return '/werkstatt'
+      default:
+        return '/role-selection'
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-hero">
-      <PublicHeader />
+      <PublicHeader userRole={userRole} />
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-16 pb-20">
@@ -397,18 +432,37 @@ export default function InfoPage() {
               Kontaktieren Sie uns für weitere Informationen oder starten Sie direkt mit der Registrierung.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/role-selection" className="inline-flex items-center gap-2 bg-white text-[hsl(var(--primary-600))] px-8 py-4 rounded-xl font-semibold hover:bg-white/90 hover:scale-105 transition-all shadow-lg shadow-black/10">
-                Jetzt registrieren
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </Link>
-            <a href="mailto:info@glasschaden-melden.de" className="inline-flex items-center gap-2 bg-white/20 text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/30 transition-colors">
-              Kontakt aufnehmen
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </a>
+              {userRole ? (
+                <>
+                  <Link href={getDashboardUrl()} className="inline-flex items-center gap-2 bg-white text-[hsl(var(--primary-600))] px-8 py-4 rounded-xl font-semibold hover:bg-white/90 hover:scale-105 transition-all shadow-lg shadow-black/10">
+                    Zum Dashboard
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </Link>
+                  <a href="mailto:info@glasschaden-melden.de" className="inline-flex items-center gap-2 bg-white/20 text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/30 transition-colors">
+                    Kontakt aufnehmen
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </a>
+                </>
+              ) : (
+                <>
+                  <Link href="/role-selection" className="inline-flex items-center gap-2 bg-white text-[hsl(var(--primary-600))] px-8 py-4 rounded-xl font-semibold hover:bg-white/90 hover:scale-105 transition-all shadow-lg shadow-black/10">
+                    Jetzt registrieren
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </Link>
+                  <a href="mailto:info@glasschaden-melden.de" className="inline-flex items-center gap-2 bg-white/20 text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/30 transition-colors">
+                    Kontakt aufnehmen
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </a>
+                </>
+              )}
             </div>
           </div>
         </div>

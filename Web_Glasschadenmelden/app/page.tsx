@@ -2,20 +2,25 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { PublicHeader } from '@/components/shared/PublicHeader'
 import { PublicFooter } from '@/components/shared/PublicFooter'
 
 export default function LandingPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isChecking, setIsChecking] = useState(true)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   const supabase = getSupabaseClient()
 
+  // Check if user explicitly wants to stay on homepage
+  const stayOnHome = searchParams.get('home') === 'true'
+
   useEffect(() => {
     checkAuth()
-  }, [])
+  }, [stayOnHome])
 
   async function checkAuth() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -27,15 +32,23 @@ export default function LandingPage() {
         .eq('id', user.id)
         .single()
 
-      if (profile?.role === 'admin') {
-        router.push('/admin')
-        return
-      } else if (profile?.role === 'versicherung') {
-        router.push('/versicherung')
-        return
-      } else if (profile?.role === 'werkstatt') {
-        router.push('/werkstatt')
-        return
+      // Store the role for showing dashboard link
+      if (profile?.role) {
+        setUserRole(profile.role)
+      }
+
+      // Only redirect if user didn't explicitly navigate to home
+      if (!stayOnHome) {
+        if (profile?.role === 'admin') {
+          router.push('/admin')
+          return
+        } else if (profile?.role === 'versicherung') {
+          router.push('/versicherung')
+          return
+        } else if (profile?.role === 'werkstatt') {
+          router.push('/werkstatt')
+          return
+        }
       }
     }
 
@@ -52,7 +65,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-hero">
-      <PublicHeader />
+      <PublicHeader userRole={userRole} />
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-24">
@@ -80,7 +93,7 @@ export default function LandingPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
             </Link>
-            <Link href="#features" className="btn-secondary text-lg px-8 py-4">
+            <Link href="/info" className="btn-secondary text-lg px-8 py-4">
               Mehr erfahren
             </Link>
           </div>

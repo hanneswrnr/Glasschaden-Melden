@@ -212,32 +212,15 @@
   transform: translateY(-2px) scale(0.99);
 }
 
-/* Card with shimmer effect */
+/* Card with clean hover effect - NO shimmer stripes */
 .card-shimmer {
   position: relative;
   overflow: hidden;
+  transition: all var(--transition-slow);
 }
 
-.card-shimmer::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    hsl(var(--primary-100) / 0.4),
-    transparent
-  );
-  transform: skewX(-20deg);
-  transition: left 0.8s ease;
-  pointer-events: none;
-}
-
-.card-shimmer:hover::before {
-  left: 150%;
+.card-shimmer:hover {
+  box-shadow: var(--shadow-lg), 0 10px 40px -15px hsl(var(--primary-500) / 0.15);
 }
 
 /* Info Card - Clean Modern Effect (No Background Lines) */
@@ -886,12 +869,14 @@
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
+  width: 100%;
   height: 4px;
   background: linear-gradient(90deg, hsl(var(--primary-400)), hsl(var(--primary-600)));
   transform: scaleX(0);
-  transform-origin: left;
-  transition: transform var(--transition-slow);
+  transform-origin: left center;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  z-index: 10;
 }
 
 .feature-card:hover {
@@ -904,6 +889,7 @@
 
 .feature-card:hover::before {
   transform: scaleX(1);
+  transform-origin: left center;
 }
 
 .feature-icon {

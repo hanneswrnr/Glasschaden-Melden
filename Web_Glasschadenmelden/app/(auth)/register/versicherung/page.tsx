@@ -98,7 +98,13 @@ export default function RegisterVersicherungPage() {
     }
   }
 
-  function nextStep() {
+  function nextStep(e?: React.MouseEvent) {
+    // Prevent any form submission
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+
     if (step === 1) {
       if (!formData.email || !formData.password || !formData.confirmPassword) {
         toast.error('Bitte alle Felder ausfüllen')
@@ -112,14 +118,17 @@ export default function RegisterVersicherungPage() {
         toast.error('Passwort muss mindestens 8 Zeichen haben')
         return
       }
+      setStep(2)
+      return
     }
     if (step === 2) {
       if (!formData.firma || !formData.ansprechpartner || !formData.telefon) {
         toast.error('Bitte alle Pflichtfelder ausfüllen')
         return
       }
+      setStep(3)
+      return
     }
-    setStep(step + 1)
   }
 
   return (
@@ -324,7 +333,7 @@ export default function RegisterVersicherungPage() {
                 {step < 3 ? (
                   <button
                     type="button"
-                    onClick={nextStep}
+                    onClick={(e) => nextStep(e)}
                     className="btn-primary flex-1"
                   >
                     Weiter

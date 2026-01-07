@@ -188,10 +188,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Footer Hint */}
-          <p className="text-center text-xs text-muted mt-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Tipp: Drücken Sie Strg+Umschalt+A für Admin-Zugang
-          </p>
         </div>
       </main>
     </div>

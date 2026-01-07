@@ -1,15 +1,35 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSupabaseClient } from '@/lib/supabase/client'
+import { Shield, Clock, Award, LogIn, ChevronRight, Sparkles } from 'lucide-react'
+import { SplashScreen } from '@/components/mobile/SplashScreen'
 
-export default function LandingPage() {
+export default function MobileApp() {
   const router = useRouter()
+  const [showSplash, setShowSplash] = useState(false)
   const [isChecking, setIsChecking] = useState(true)
-
+  const [showContent, setShowContent] = useState(false)
   const supabase = getSupabaseClient()
+
+  // Check if splash has been shown this session
+  useEffect(() => {
+    const hasSeenSplash = sessionStorage.getItem('hasSeenSplash')
+    if (!hasSeenSplash) {
+      setShowSplash(true)
+    } else {
+      setShowContent(true)
+    }
+  }, [])
+
+  const handleSplashComplete = useCallback(() => {
+    sessionStorage.setItem('hasSeenSplash', 'true')
+    setShowSplash(false)
+    // Trigger content animations after splash
+    setTimeout(() => setShowContent(true), 100)
+  }, [])
 
   useEffect(() => {
     checkAuth()
@@ -25,13 +45,15 @@ export default function LandingPage() {
         .eq('id', user.id)
         .single()
 
-      if (profile?.role === 'admin') {
+      const userRole = (profile as { role?: string } | null)?.role
+
+      if (userRole === 'admin') {
         router.push('/admin')
         return
-      } else if (profile?.role === 'versicherung') {
+      } else if (userRole === 'versicherung') {
         router.push('/versicherung')
         return
-      } else if (profile?.role === 'werkstatt') {
+      } else if (userRole === 'werkstatt') {
         router.push('/werkstatt')
         return
       }
@@ -40,149 +62,197 @@ export default function LandingPage() {
     setIsChecking(false)
   }
 
+  // Show splash screen
+  if (showSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} minDuration={2500} />
+  }
+
+  // Loading state after splash (while checking auth)
   if (isChecking) {
     return (
-      <div className="min-h-screen bg-gradient-hero flex items-center justify-center">
-        <div className="spinner" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 animate-scale-in">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+            <Shield className="w-8 h-8 text-white animate-icon-pulse" />
+          </div>
+          <div className="flex gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce-dot" style={{ animationDelay: '0ms' }} />
+            <div className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce-dot" style={{ animationDelay: '150ms' }} />
+            <div className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce-dot" style={{ animationDelay: '300ms' }} />
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      {/* Header */}
-      <header className="navbar">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="logo-link">
-            <div className="logo-icon">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <span className="logo-text">Glasschaden<span className="logo-text-accent">Melden</span></span>
-          </Link>
-          <Link href="/role-selection" className="btn-primary">
-            Anmelden / Registrieren
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </Link>
+    <div className="min-h-screen bg-slate-50">
+      {/* App Header */}
+      <header className={`bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40 ${showContent ? 'animate-slide-in-bottom' : 'opacity-0'}`}>
+        <div className="flex items-center gap-2">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-md shadow-indigo-500/20">
+            <Shield className="w-5 h-5 text-white" />
+          </div>
+          <span className="font-bold text-lg">GlasschadenMelden</span>
+        </div>
+        <div className="flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
+          <Sparkles className="w-3 h-3" />
+          <span className="font-medium">Neu</span>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-20 pb-24">
-        <div className="text-center animate-fade-in-up">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[hsl(var(--primary-50))] border border-[hsl(var(--primary-200))] mb-8">
-            <span className="w-2 h-2 rounded-full bg-[hsl(var(--success))] animate-pulse-soft" />
-            <span className="text-sm font-medium text-[hsl(var(--primary-700))]">Jetzt verfügbar</span>
+      {/* Main Content */}
+      <main className="p-4">
+        {/* Welcome Card */}
+        <div className={`relative overflow-hidden bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 rounded-3xl p-6 text-white mb-6 shadow-xl shadow-indigo-500/20 ${showContent ? 'animate-stagger-1' : 'opacity-0'}`}>
+          {/* Animated Background */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl animate-float-slow" />
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl animate-float-slow-reverse" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl" />
           </div>
 
-          <h1 className="heading-1 text-5xl md:text-6xl mb-6">
-            Glasschaden-Management
-            <br />
-            <span className="text-gradient-animated">einfach & professionell</span>
-          </h1>
-
-          <p className="text-xl text-muted max-w-2xl mx-auto mb-10">
-            Die moderne Plattform für Versicherungen und Werkstätten.
-            Schnelle Schadensmeldung, reibungslose Abwicklung – für alle Beteiligten.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Link href="/role-selection" className="btn-primary text-lg px-8 py-4">
+          <div className="relative">
+            <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Jetzt verfügbar
+            </div>
+            <h1 className="text-2xl font-bold mb-2">Willkommen!</h1>
+            <p className="text-indigo-100 text-sm mb-5 leading-relaxed">
+              Melden Sie Glasschäden schnell und unkompliziert.
+            </p>
+            <Link
+              href="/role-selection"
+              className="inline-flex items-center gap-2 bg-white text-indigo-600 px-5 py-2.5 rounded-xl font-semibold text-sm shadow-lg shadow-black/10 active:scale-95 transition-transform"
+            >
               Jetzt starten
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </Link>
-            <Link href="#features" className="btn-secondary text-lg px-8 py-4">
-              Mehr erfahren
+              <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
-      </section>
 
-      {/* Features */}
-      <section id="features" className="max-w-6xl mx-auto px-6 pb-24">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="feature-card card-shimmer animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <div className="feature-icon">
-              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        {/* Quick Actions */}
+        <h2 className={`font-semibold text-slate-900 mb-3 px-1 ${showContent ? 'animate-stagger-2' : 'opacity-0'}`}>Schnellzugriff</h2>
+        <div className={`grid grid-cols-2 gap-3 mb-6 ${showContent ? 'animate-stagger-2' : 'opacity-0'}`}>
+          <Link
+            href="/login"
+            className="group bg-white rounded-2xl p-4 flex flex-col items-center gap-3 border border-slate-100 shadow-sm active:scale-95 transition-all hover:shadow-md hover:border-indigo-200"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <LogIn className="w-6 h-6 text-indigo-600" />
+            </div>
+            <span className="text-sm font-semibold text-slate-700">Anmelden</span>
+          </Link>
+
+          <Link
+            href="/role-selection"
+            className="group bg-white rounded-2xl p-4 flex flex-col items-center gap-3 border border-slate-100 shadow-sm active:scale-95 transition-all hover:shadow-md hover:border-emerald-200"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               </svg>
             </div>
-            <h3 className="heading-3 mb-3">Sicher & Zuverlässig</h3>
-            <p className="text-muted">
-              Ihre Daten sind bei uns sicher geschützt. Modernste Verschlüsselung und strenge Datenschutzrichtlinien.
-            </p>
-          </div>
-
-          <div className="feature-card card-shimmer animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <div className="feature-icon">
-              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="heading-3 mb-3">Schnell & Effizient</h3>
-            <p className="text-muted">
-              Schadensmeldung in wenigen Minuten. Keine komplizierten Formulare, keine langen Wartezeiten.
-            </p>
-          </div>
-
-          <div className="feature-card card-shimmer animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-            <div className="feature-icon">
-              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-              </svg>
-            </div>
-            <h3 className="heading-3 mb-3">Professionell</h3>
-            <p className="text-muted">
-              Erfüllt höchste Qualitätsstandards. Entwickelt für professionelle Ansprüche.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="max-w-6xl mx-auto px-6 pb-24">
-        <div className="card card-shimmer p-12 text-center animate-fade-in-up">
-          <div className="icon-box icon-box-lg icon-box-primary mx-auto mb-6">
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <h2 className="heading-1 mb-4">Bereit loszulegen?</h2>
-          <p className="text-lg text-muted max-w-xl mx-auto mb-8">
-            Registrieren Sie sich jetzt als Werkstatt oder Versicherung und starten Sie mit der digitalen Schadensmeldung.
-          </p>
-          <Link href="/role-selection" className="btn-primary text-lg px-10 py-4">
-            Jetzt registrieren
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
+            <span className="text-sm font-semibold text-slate-700">Registrieren</span>
           </Link>
         </div>
-      </section>
 
-      {/* Footer */}
-      <footer className="border-t border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-        <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[hsl(var(--primary-500))] flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <span className="font-semibold">GlasschadenMelden</span>
+        {/* Features Section */}
+        <h2 id="info" className={`font-semibold text-slate-900 mb-3 px-1 ${showContent ? 'animate-stagger-3' : 'opacity-0'}`}>Unsere Vorteile</h2>
+        <div className={`space-y-3 ${showContent ? 'animate-stagger-3' : 'opacity-0'}`}>
+          <div className="group bg-white rounded-2xl p-4 flex items-center gap-4 border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all active:scale-[0.98]">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <Shield className="w-6 h-6 text-blue-600" />
             </div>
-            <p className="text-sm text-muted">
-              © {new Date().getFullYear()} GlasschadenMelden. Alle Rechte vorbehalten.
-            </p>
+            <div className="flex-1">
+              <h3 className="font-semibold text-slate-900">Sicher & Zuverlässig</h3>
+              <p className="text-sm text-slate-500">Ihre Daten sind bei uns geschützt</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" />
+          </div>
+
+          <div className="group bg-white rounded-2xl p-4 flex items-center gap-4 border border-slate-100 shadow-sm hover:shadow-md hover:border-amber-200 transition-all active:scale-[0.98]">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <Clock className="w-6 h-6 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-slate-900">Schnell & Effizient</h3>
+              <p className="text-sm text-slate-500">Schadensmeldung in Minuten</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" />
+          </div>
+
+          <div className="group bg-white rounded-2xl p-4 flex items-center gap-4 border border-slate-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all active:scale-[0.98]">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <Award className="w-6 h-6 text-emerald-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-slate-900">Professionell</h3>
+              <p className="text-sm text-slate-500">Höchste Qualitätsstandards</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" />
           </div>
         </div>
-      </footer>
+
+        {/* Info Cards */}
+        <div className={`mt-6 space-y-4 ${showContent ? 'animate-stagger-4' : 'opacity-0'}`}>
+          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+                <svg className="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
+                </svg>
+              </div>
+              <h2 className="font-semibold text-slate-900">Für Versicherungen</h2>
+            </div>
+            <ul className="text-slate-600 text-sm space-y-2">
+              <li className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xs font-bold">✓</span>
+                Schäden digital erfassen
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xs font-bold">✓</span>
+                Werkstätten zuweisen
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xs font-bold">✓</span>
+                Status in Echtzeit verfolgen
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h2 className="font-semibold text-slate-900">Für Werkstätten</h2>
+            </div>
+            <ul className="text-slate-600 text-sm space-y-2">
+              <li className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xs font-bold">✓</span>
+                Aufträge empfangen
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xs font-bold">✓</span>
+                Daten prüfen & korrigieren
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xs font-bold">✓</span>
+                Provisionen verwalten
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* App Version */}
+        <p className={`text-center text-xs text-slate-400 mt-8 mb-4 ${showContent ? 'animate-stagger-5' : 'opacity-0'}`}>
+          Version 1.0.0
+        </p>
+      </main>
     </div>
   )
 }

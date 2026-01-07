@@ -793,6 +793,79 @@
   width: 60%;
 }
 
+/* Modern Nav Link with Ultra-Modern Hover Effect */
+.nav-link-modern {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  text-decoration: none;
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-slow);
+  overflow: hidden;
+}
+
+.nav-link-modern .nav-link-text {
+  position: relative;
+  z-index: 2;
+  transition: all var(--transition-slow);
+}
+
+.nav-link-modern .nav-link-indicator {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, hsl(var(--primary-400)), hsl(var(--primary-600)), hsl(var(--primary-400)));
+  background-size: 200% 100%;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  transition: all var(--transition-slow) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-link-modern::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, hsl(var(--primary-50)) 0%, hsl(var(--primary-100)) 100%);
+  border-radius: var(--radius-lg);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all var(--transition-slow) cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 0;
+}
+
+.nav-link-modern:hover {
+  color: hsl(var(--primary-700));
+}
+
+.nav-link-modern:hover::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.nav-link-modern:hover .nav-link-text {
+  transform: translateY(-2px);
+}
+
+.nav-link-modern:hover .nav-link-indicator {
+  width: 60%;
+  animation: gradient-shift 2s ease infinite;
+}
+
+.nav-link-modern:active {
+  transform: scale(0.97);
+}
+
+.nav-link-modern:active::before {
+  transform: scale(0.95);
+}
+
 /* ============================================
    FEATURE CARDS
    ============================================ */

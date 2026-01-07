@@ -1,20 +1,22 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Toaster } from 'sonner'
+import { BottomNavigation } from '@/components/mobile/BottomNavigation'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#4F46E5',
+}
 
 export const metadata: Metadata = {
   title: 'Glasschaden Melden',
   description: 'Professionelle Glasschaden-Verwaltung für Versicherungen und Werkstätten',
   manifest: '/manifest.json',
-  themeColor: '#4F46E5',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
 }
 
 export default function RootLayout({
@@ -25,9 +27,12 @@ export default function RootLayout({
   return (
     <html lang="de" suppressHydrationWarning>
       <body className={inter.className}>
-        {children}
+        <div className="pb-24">
+          {children}
+        </div>
+        <BottomNavigation />
         <Toaster
-          position="top-right"
+          position="top-center"
           toastOptions={{
             style: {
               background: 'white',

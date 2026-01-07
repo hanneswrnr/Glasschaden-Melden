@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { getSupabaseClient } from '@/lib/supabase/client'
+import { ArrowLeft, Lock, Mail, ChevronRight, Building2, Wrench } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -42,13 +43,15 @@ export default function LoginPage() {
         .eq('id', data.user.id)
         .single()
 
+      const userRole = (profile as { role?: string } | null)?.role
+
       toast.success('Erfolgreich eingeloggt!')
 
-      if (profile?.role === 'admin') {
+      if (userRole === 'admin') {
         router.push('/admin')
-      } else if (profile?.role === 'versicherung') {
+      } else if (userRole === 'versicherung') {
         router.push('/versicherung')
-      } else if (profile?.role === 'werkstatt') {
+      } else if (userRole === 'werkstatt') {
         router.push('/werkstatt')
       } else {
         router.push('/')
@@ -62,137 +65,122 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      {/* Header */}
-      <header className="navbar">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="logo-link">
-            <div className="logo-icon">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <span className="logo-text">Glasschaden<span className="logo-text-accent">Melden</span></span>
-          </Link>
-        </div>
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      {/* Mobile Header with Back Button */}
+      <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-4 sticky top-0 z-40">
+        <button
+          onClick={() => router.push('/')}
+          className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <ArrowLeft className="w-5 h-5 text-slate-600" />
+        </button>
+        <h1 className="font-semibold text-lg">Anmelden</h1>
       </header>
 
       {/* Main Content */}
-      <main className="flex items-center justify-center px-4 py-16">
-        <div className="w-full max-w-md">
-          {/* Login Card */}
-          <div className="card-elevated card-shimmer p-8 animate-fade-in-up">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className="icon-box icon-box-lg icon-box-primary mx-auto mb-4">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <h1 className="heading-2 mb-2">Willkommen zurück</h1>
-              <p className="text-muted">
-                Melden Sie sich an, um fortzufahren
-              </p>
-            </div>
+      <main className="flex-1 p-4">
+        {/* Logo & Welcome */}
+        <div className="text-center py-8">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/30">
+            <Lock className="w-10 h-10 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-1">Willkommen zurück</h2>
+          <p className="text-slate-500">Melden Sie sich an, um fortzufahren</p>
+        </div>
 
-            {/* Login Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label htmlFor="email" className="input-label">
-                  E-Mail
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  className="input"
-                  placeholder="ihre@email.de"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="password" className="input-label">
-                  Passwort
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                  className="input"
-                  placeholder="Ihr Passwort"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="btn-primary w-full"
-              >
-                {isLoading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="spinner-dots">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                    Wird angemeldet...
-                  </span>
-                ) : (
-                  <>
-                    Anmelden
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                  </>
-                )}
-              </button>
-            </form>
-
-            {/* Divider */}
-            <div className="divider" />
-
-            {/* Register Links */}
-            <div className="text-center">
-              <p className="text-muted text-sm mb-4">
-                Noch kein Account?
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <Link
-                  href="/register/versicherung"
-                  className="btn-secondary"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  Versicherung
-                </Link>
-                <Link
-                  href="/register/werkstatt"
-                  className="btn-secondary"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  Werkstatt
-                </Link>
-              </div>
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email Input */}
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <div className="flex items-center gap-3 px-4 py-3.5">
+              <Mail className="w-5 h-5 text-slate-400" />
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="flex-1 bg-transparent outline-none text-slate-900 placeholder:text-slate-400"
+                placeholder="E-Mail-Adresse"
+              />
             </div>
           </div>
 
-          {/* Footer Hint */}
-          <p className="text-center text-xs text-muted mt-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Tipp: Drücken Sie Strg+Umschalt+A für Admin-Zugang
-          </p>
+          {/* Password Input */}
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <div className="flex items-center gap-3 px-4 py-3.5">
+              <Lock className="w-5 h-5 text-slate-400" />
+              <input
+                type="password"
+                required
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="flex-1 bg-transparent outline-none text-slate-900 placeholder:text-slate-400"
+                placeholder="Passwort"
+              />
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/30 active:scale-[0.98] transition-transform disabled:opacity-70"
+          >
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Wird angemeldet...
+              </span>
+            ) : (
+              <>
+                Anmelden
+                <ChevronRight className="w-5 h-5" />
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="flex items-center gap-4 my-8">
+          <div className="flex-1 h-px bg-slate-200" />
+          <span className="text-sm text-slate-500">Noch kein Konto?</span>
+          <div className="flex-1 h-px bg-slate-200" />
         </div>
+
+        {/* Register Options */}
+        <div className="space-y-3">
+          <Link
+            href="/register/versicherung"
+            className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center gap-4 active:scale-[0.98] transition-transform"
+          >
+            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+              <Building2 className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-slate-900">Als Versicherung</h3>
+              <p className="text-sm text-slate-500">Konto erstellen</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400" />
+          </Link>
+
+          <Link
+            href="/register/werkstatt"
+            className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center gap-4 active:scale-[0.98] transition-transform"
+          >
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
+              <Wrench className="w-6 h-6 text-emerald-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-slate-900">Als Werkstatt</h3>
+              <p className="text-sm text-slate-500">Konto erstellen</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400" />
+          </Link>
+        </div>
+
       </main>
     </div>
   )

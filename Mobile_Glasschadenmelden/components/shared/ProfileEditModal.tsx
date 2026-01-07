@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { getSupabaseClient } from '@/lib/supabase/client'
+import { X, AlertTriangle, Trash2, Edit3 } from 'lucide-react'
 
 interface ProfileEditModalProps {
   isOpen: boolean
   onClose: () => void
-  role: 'versicherung' | 'werkstatt'
+  role: 'versicherung' | 'werkstatt' | 'admin'
   userId: string
   onSave?: () => void
+  hideDeleteOption?: boolean
 }
 
 interface VersicherungData {
@@ -31,13 +33,30 @@ interface StandortData {
   is_primary: boolean
 }
 
-export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: ProfileEditModalProps) {
+interface AdminData {
+  display_name: string
+  email: string
+}
+
+export function ProfileEditModal({ isOpen, onClose, role, userId, onSave, hideDeleteOption = false }: ProfileEditModalProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
 
   // Versicherung data
   const [versicherungData, setVersicherungData] = useState<VersicherungData>({
@@ -52,6 +71,12 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
   // Werkstatt data (standorte)
   const [standorte, setStandorte] = useState<StandortData[]>([])
   const [editingStandort, setEditingStandort] = useState<StandortData | null>(null)
+
+  // Admin data
+  const [adminData, setAdminData] = useState<AdminData>({
+    display_name: '',
+    email: '',
+  })
 
   const supabase = getSupabaseClient()
 
@@ -101,6 +126,19 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
           setStandorte(standorteData)
         }
       }
+    } else if (role === 'admin') {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', userId)
+        .single()
+
+      const { data: { user } } = await supabase.auth.getUser()
+
+      setAdminData({
+        display_name: profile?.display_name || 'Administrator',
+        email: user?.email || '',
+      })
     }
 
     setIsLoading(false)
@@ -110,7 +148,6 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
     e.preventDefault()
     setIsSaving(true)
 
-    // Update versicherungen table
     const { error: versicherungError } = await supabase
       .from('versicherungen')
       .update({
@@ -123,7 +160,6 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
       })
       .eq('user_id', userId)
 
-    // Also update profiles table for Supabase visibility
     const { error: profileError } = await supabase
       .from('profiles')
       .update({
@@ -161,7 +197,6 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
       })
       .eq('id', editingStandort.id)
 
-    // If editing primary standort, also update profiles table
     if (editingStandort.is_primary) {
       await supabase
         .from('profiles')
@@ -186,6 +221,28 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
     }
   }
 
+  async function handleSaveAdmin(e: React.FormEvent) {
+    e.preventDefault()
+    setIsSaving(true)
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        display_name: adminData.display_name,
+      })
+      .eq('id', userId)
+
+    setIsSaving(false)
+
+    if (error) {
+      toast.error('Fehler beim Speichern: ' + error.message)
+    } else {
+      toast.success('Profil erfolgreich aktualisiert')
+      onSave?.()
+      onClose()
+    }
+  }
+
   async function handleDeleteAccount() {
     if (deleteConfirmText !== 'LÖSCHEN') {
       toast.error('Bitte geben Sie "LÖSCHEN" ein, um fortzufahren')
@@ -195,15 +252,12 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
     setIsDeleting(true)
 
     try {
-      // Delete role-specific data first
       if (role === 'versicherung') {
-        // Delete versicherung record
         await supabase
           .from('versicherungen')
           .delete()
           .eq('user_id', userId)
       } else if (role === 'werkstatt') {
-        // Get werkstatt ID first
         const { data: werkstatt } = await supabase
           .from('werkstaetten')
           .select('id')
@@ -211,13 +265,11 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
           .single()
 
         if (werkstatt) {
-          // Delete all standorte
           await supabase
             .from('werkstatt_standorte')
             .delete()
             .eq('werkstatt_id', werkstatt.id)
 
-          // Delete werkstatt record
           await supabase
             .from('werkstaetten')
             .delete()
@@ -225,18 +277,14 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
         }
       }
 
-      // Delete profile
       await supabase
         .from('profiles')
         .delete()
         .eq('id', userId)
 
-      // Sign out the user
       await supabase.auth.signOut()
 
       toast.success('Ihr Konto wurde erfolgreich gelöscht')
-
-      // Redirect to home page
       router.push('/')
     } catch (error) {
       console.error('Error deleting account:', error)
@@ -245,12 +293,19 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
     }
   }
 
+  function getModalTitle() {
+    if (role === 'admin') return 'Admin Profil'
+    if (role === 'versicherung') return 'Profil bearbeiten'
+    if (editingStandort) return 'Standort bearbeiten'
+    return 'Standorte verwalten'
+  }
+
   if (!isOpen) return null
 
   // Delete confirmation modal
   if (showDeleteConfirm) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
         {/* Backdrop */}
         <div
           className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -263,51 +318,43 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
         />
 
         {/* Modal */}
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-fade-in-up">
+        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
           {/* Header */}
-          <div className="p-6 border-b border-red-200 bg-red-50">
+          <div className="p-5 border-b border-red-200 bg-red-50">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
+                <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-red-900">Konto löschen</h2>
+                <h2 className="text-lg font-bold text-red-900">Konto löschen</h2>
                 <p className="text-sm text-red-700">Diese Aktion kann nicht rückgängig gemacht werden</p>
               </div>
             </div>
           </div>
 
           {/* Content */}
-          <div className="p-6">
-            <div className="mb-6">
-              <p className="text-slate-700 mb-4">
+          <div className="p-5">
+            <div className="mb-5">
+              <p className="text-slate-700 text-sm mb-3">
                 Wenn Sie Ihr Konto löschen, werden <strong>alle Ihre Daten unwiderruflich entfernt</strong>, einschließlich:
               </p>
               <ul className="text-sm text-slate-600 space-y-2 mb-4">
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="w-4 h-4 text-red-500" />
                   Profil- und Kontoinformationen
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="w-4 h-4 text-red-500" />
                   {role === 'versicherung' ? 'Versicherungsdaten' : 'Werkstatt- und Standortdaten'}
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="w-4 h-4 text-red-500" />
                   Zugang zu allen verknüpften Schadensfällen
                 </li>
               </ul>
             </div>
 
-            <div className="mb-6">
+            <div className="mb-5">
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Geben Sie <span className="font-bold text-red-600">LÖSCHEN</span> ein, um zu bestätigen:
               </label>
@@ -316,7 +363,7 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder="LÖSCHEN"
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-base"
                 disabled={isDeleting}
               />
             </div>
@@ -329,7 +376,7 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
                   setDeleteConfirmText('')
                 }}
                 disabled={isDeleting}
-                className="flex-1 py-3 px-4 border border-slate-300 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
+                className="flex-1 py-3.5 px-4 border border-slate-300 rounded-xl text-slate-700 font-medium active:bg-slate-100 transition-colors disabled:opacity-50"
               >
                 Abbrechen
               </button>
@@ -337,7 +384,7 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
                 type="button"
                 onClick={handleDeleteAccount}
                 disabled={isDeleting || deleteConfirmText !== 'LÖSCHEN'}
-                className="flex-1 py-3 px-4 bg-red-600 rounded-xl text-white font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 py-3.5 px-4 bg-red-600 rounded-xl text-white font-medium active:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isDeleting ? (
                   <>
@@ -346,10 +393,8 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
                   </>
                 ) : (
                   <>
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Konto löschen
+                    <Trash2 className="w-5 h-5" />
+                    Löschen
                   </>
                 )}
               </button>
@@ -361,7 +406,7 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -369,178 +414,221 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-hidden animate-fade-in-up">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden animate-slide-up">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[hsl(var(--border))]">
-          <h2 className="text-xl font-bold">
-            {role === 'versicherung' ? 'Profil bearbeiten' : editingStandort ? 'Standort bearbeiten' : 'Standorte verwalten'}
+        <div className="flex items-center justify-between p-5 border-b border-slate-200 bg-white sticky top-0 z-10">
+          <h2 className="text-lg font-bold">
+            {getModalTitle()}
           </h2>
           <button
             onClick={() => {
               setEditingStandort(null)
               onClose()
             }}
-            className="p-2 rounded-lg hover:bg-[hsl(var(--muted))] transition-colors"
+            className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:bg-slate-200 transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="w-5 h-5 text-slate-600" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div className="p-5 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 80px)' }}>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="spinner" />
+              <div className="w-8 h-8 border-4 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
             </div>
+          ) : role === 'admin' ? (
+            // Admin Profile Form
+            <form onSubmit={handleSaveAdmin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Anzeigename</label>
+                <input
+                  type="text"
+                  value={adminData.display_name}
+                  onChange={(e) => setAdminData({ ...adminData, display_name: e.target.value })}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-base"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">E-Mail</label>
+                <input
+                  type="email"
+                  value={adminData.email}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 text-slate-500 text-base"
+                  disabled
+                />
+                <p className="text-xs text-slate-500 mt-1">E-Mail kann nicht geändert werden</p>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={onClose} className="flex-1 py-3.5 px-4 border border-slate-300 rounded-xl text-slate-700 font-medium active:bg-slate-100 transition-colors">
+                  Abbrechen
+                </button>
+                <button type="submit" disabled={isSaving} className="flex-1 py-3.5 px-4 bg-red-600 rounded-xl text-white font-medium active:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Speichern...
+                    </>
+                  ) : 'Speichern'}
+                </button>
+              </div>
+            </form>
           ) : role === 'versicherung' ? (
             <form onSubmit={handleSaveVersicherung} className="space-y-4">
               <div>
-                <label className="input-label">Firmenname</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Firmenname</label>
                 <input
                   type="text"
                   value={versicherungData.firma}
                   onChange={(e) => setVersicherungData({ ...versicherungData, firma: e.target.value })}
-                  className="input"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-base"
                   required
                 />
               </div>
               <div>
-                <label className="input-label">Adresse</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Adresse</label>
                 <input
                   type="text"
                   value={versicherungData.adresse}
                   onChange={(e) => setVersicherungData({ ...versicherungData, adresse: e.target.value })}
-                  className="input"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-base"
                 />
               </div>
               <div>
-                <label className="input-label">Ansprechpartner</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Ansprechpartner</label>
                 <input
                   type="text"
                   value={versicherungData.ansprechpartner}
                   onChange={(e) => setVersicherungData({ ...versicherungData, ansprechpartner: e.target.value })}
-                  className="input"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-base"
                   required
                 />
               </div>
               <div>
-                <label className="input-label">Telefon</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Telefon</label>
                 <input
                   type="tel"
                   value={versicherungData.telefon}
                   onChange={(e) => setVersicherungData({ ...versicherungData, telefon: e.target.value })}
-                  className="input"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-base"
                   required
                 />
               </div>
-              <div className="pt-4 border-t border-[hsl(var(--border))]">
+              <div className="pt-4 border-t border-slate-200">
                 <h3 className="font-semibold mb-4">Bankverbindung</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="input-label">Bankname</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Bankname</label>
                     <input
                       type="text"
                       value={versicherungData.bankname}
                       onChange={(e) => setVersicherungData({ ...versicherungData, bankname: e.target.value })}
-                      className="input"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-base"
                     />
                   </div>
                   <div>
-                    <label className="input-label">IBAN</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">IBAN</label>
                     <input
                       type="text"
                       value={versicherungData.iban}
                       onChange={(e) => setVersicherungData({ ...versicherungData, iban: e.target.value })}
-                      className="input"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-base"
                       placeholder="DE89 3704 0044 0532 0130 00"
                     />
                   </div>
                 </div>
               </div>
               <div className="flex gap-3 pt-4">
-                <button type="button" onClick={onClose} className="btn-secondary flex-1">
+                <button type="button" onClick={onClose} className="flex-1 py-3.5 px-4 border border-slate-300 rounded-xl text-slate-700 font-medium active:bg-slate-100 transition-colors">
                   Abbrechen
                 </button>
-                <button type="submit" disabled={isSaving} className="btn-primary flex-1">
-                  {isSaving ? 'Speichern...' : 'Speichern'}
+                <button type="submit" disabled={isSaving} className="flex-1 py-3.5 px-4 bg-purple-600 rounded-xl text-white font-medium active:bg-purple-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Speichern...
+                    </>
+                  ) : 'Speichern'}
                 </button>
               </div>
 
               {/* Delete Account Section */}
-              <div className="pt-6 mt-6 border-t border-red-200">
-                <div className="p-4 bg-red-50 rounded-xl">
-                  <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    Gefahrenzone
-                  </h4>
-                  <p className="text-sm text-red-700 mb-3">
-                    Das Löschen Ihres Kontos ist endgültig und kann nicht rückgängig gemacht werden.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="w-full py-2.5 px-4 border border-red-300 rounded-xl text-red-700 font-medium hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Konto löschen
-                  </button>
+              {!hideDeleteOption && (
+                <div className="pt-6 mt-6 border-t border-red-200">
+                  <div className="p-4 bg-red-50 rounded-xl">
+                    <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5" />
+                      Gefahrenzone
+                    </h4>
+                    <p className="text-sm text-red-700 mb-3">
+                      Das Löschen Ihres Kontos ist endgültig und kann nicht rückgängig gemacht werden.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="w-full py-3 px-4 border border-red-300 rounded-xl text-red-700 font-medium active:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Konto löschen
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </form>
           ) : editingStandort ? (
             <form onSubmit={handleSaveStandort} className="space-y-4">
               <div>
-                <label className="input-label">Standortname</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Standortname</label>
                 <input
                   type="text"
                   value={editingStandort.name}
                   onChange={(e) => setEditingStandort({ ...editingStandort, name: e.target.value })}
-                  className="input"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-base"
                   required
                 />
               </div>
               <div>
-                <label className="input-label">Adresse</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Adresse</label>
                 <input
                   type="text"
                   value={editingStandort.adresse}
                   onChange={(e) => setEditingStandort({ ...editingStandort, adresse: e.target.value })}
-                  className="input"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-base"
                   required
                 />
               </div>
               <div>
-                <label className="input-label">Ansprechpartner</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Ansprechpartner</label>
                 <input
                   type="text"
                   value={editingStandort.ansprechpartner}
                   onChange={(e) => setEditingStandort({ ...editingStandort, ansprechpartner: e.target.value })}
-                  className="input"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-base"
                   required
                 />
               </div>
               <div>
-                <label className="input-label">Telefon</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Telefon</label>
                 <input
                   type="tel"
                   value={editingStandort.telefon}
                   onChange={(e) => setEditingStandort({ ...editingStandort, telefon: e.target.value })}
-                  className="input"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors text-base"
                   required
                 />
               </div>
               <div className="flex gap-3 pt-4">
-                <button type="button" onClick={() => setEditingStandort(null)} className="btn-secondary flex-1">
+                <button type="button" onClick={() => setEditingStandort(null)} className="flex-1 py-3.5 px-4 border border-slate-300 rounded-xl text-slate-700 font-medium active:bg-slate-100 transition-colors">
                   Abbrechen
                 </button>
-                <button type="submit" disabled={isSaving} className="btn-primary flex-1">
-                  {isSaving ? 'Speichern...' : 'Speichern'}
+                <button type="submit" disabled={isSaving} className="flex-1 py-3.5 px-4 bg-orange-600 rounded-xl text-white font-medium active:bg-orange-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Speichern...
+                    </>
+                  ) : 'Speichern'}
                 </button>
               </div>
             </form>
@@ -549,65 +637,61 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
               {standorte.map((standort) => (
                 <div
                   key={standort.id}
-                  className="p-4 rounded-xl border border-[hsl(var(--border))] hover:border-[hsl(var(--primary-300))] transition-colors"
+                  className="p-4 rounded-xl border border-slate-200 active:border-orange-300 transition-colors"
                 >
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold">{standort.name}</h4>
+                        <h4 className="font-semibold truncate">{standort.name}</h4>
                         {standort.is_primary && (
-                          <span className="badge badge-primary text-xs">Hauptstandort</span>
+                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0">Haupt</span>
                         )}
                       </div>
-                      <p className="text-sm text-muted">{standort.adresse}</p>
-                      <p className="text-sm text-muted">{standort.ansprechpartner} - {standort.telefon}</p>
+                      <p className="text-sm text-slate-500 truncate">{standort.adresse}</p>
+                      <p className="text-sm text-slate-500">{standort.ansprechpartner} - {standort.telefon}</p>
                     </div>
                     <button
                       onClick={() => setEditingStandort(standort)}
-                      className="btn-icon"
+                      className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:bg-slate-200 transition-colors flex-shrink-0 ml-3"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
+                      <Edit3 className="w-4 h-4 text-slate-600" />
                     </button>
                   </div>
                 </div>
               ))}
               {standorte.length === 0 && (
-                <div className="text-center py-8 text-muted">
+                <div className="text-center py-8 text-slate-500">
                   Keine Standorte vorhanden
                 </div>
               )}
               <div className="pt-4">
-                <button onClick={onClose} className="btn-secondary w-full">
+                <button onClick={onClose} className="w-full py-3.5 px-4 border border-slate-300 rounded-xl text-slate-700 font-medium active:bg-slate-100 transition-colors">
                   Schliessen
                 </button>
               </div>
 
               {/* Delete Account Section for Werkstatt */}
-              <div className="pt-6 mt-2 border-t border-red-200">
-                <div className="p-4 bg-red-50 rounded-xl">
-                  <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    Gefahrenzone
-                  </h4>
-                  <p className="text-sm text-red-700 mb-3">
-                    Das Löschen Ihres Kontos ist endgültig und kann nicht rückgängig gemacht werden.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="w-full py-2.5 px-4 border border-red-300 rounded-xl text-red-700 font-medium hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Konto löschen
-                  </button>
+              {!hideDeleteOption && (
+                <div className="pt-6 mt-2 border-t border-red-200">
+                  <div className="p-4 bg-red-50 rounded-xl">
+                    <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5" />
+                      Gefahrenzone
+                    </h4>
+                    <p className="text-sm text-red-700 mb-3">
+                      Das Löschen Ihres Kontos ist endgültig und kann nicht rückgängig gemacht werden.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="w-full py-3 px-4 border border-red-300 rounded-xl text-red-700 font-medium active:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Konto löschen
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>

@@ -124,7 +124,12 @@ export default function VersicherungDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="badge badge-primary">Versicherung</span>
+            <span className="px-3 py-1 rounded-full bg-purple-500 text-white text-sm font-medium">Versicherung</span>
+            <Link href="/?home=true" className="btn-icon" title="Zur Startseite">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+            </Link>
             <button
               onClick={() => setShowProfileModal(true)}
               className="btn-icon"
@@ -145,24 +150,28 @@ export default function VersicherungDashboard() {
       {/* Main */}
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Welcome */}
-        <div className="card p-8 mb-8 animate-fade-in-up">
-          <div className="flex items-center justify-between">
+        <div className="relative overflow-hidden bg-gradient-to-br from-purple-500 via-purple-600 to-violet-600 rounded-2xl p-8 mb-8 animate-fade-in-up shadow-lg">
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+          </div>
+          <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <div className="icon-box icon-box-lg">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
-              <div>
-                <h2 className="heading-2 mb-1">
-                  Willkommen, <span className="text-gradient">{versicherung?.ansprechpartner}</span>!
+              <div className="text-white">
+                <h2 className="text-2xl font-bold mb-1">
+                  Willkommen, {versicherung?.ansprechpartner}!
                 </h2>
-                <p className="text-muted">
+                <p className="text-purple-100">
                   Verwalten Sie Ihre Schadensmeldungen und kommunizieren Sie mit Werkstätten.
                 </p>
               </div>
             </div>
-            <button className="btn-primary">
+            <button className="flex items-center gap-2 bg-white text-purple-600 px-6 py-3 rounded-xl font-semibold shadow-lg hover:bg-purple-50 transition-colors">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
@@ -174,7 +183,7 @@ export default function VersicherungDashboard() {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="stat-card animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <div className="stat-icon bg-blue-500 text-white">
+            <div className="stat-icon bg-purple-500 text-white">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>

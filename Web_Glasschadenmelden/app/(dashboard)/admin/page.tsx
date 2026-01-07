@@ -109,7 +109,12 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="badge badge-primary">Administrator</span>
+            <span className="px-3 py-1 rounded-full bg-red-500 text-white text-sm font-medium">Administrator</span>
+            <Link href="/?home=true" className="btn-icon" title="Zur Startseite">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+            </Link>
             <button onClick={handleLogout} className="btn-secondary text-sm py-2 px-4">
               Abmelden
             </button>
@@ -120,18 +125,22 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Welcome Card */}
-        <div className="card card-shimmer p-8 mb-8 animate-fade-in-up">
-          <div className="flex items-center gap-6">
-            <div className="icon-box icon-box-lg icon-box-primary">
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="relative overflow-hidden bg-gradient-to-br from-red-500 via-red-600 to-rose-600 rounded-2xl p-8 mb-8 animate-fade-in-up shadow-lg">
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+          </div>
+          <div className="relative flex items-center gap-6">
+            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
             </div>
-            <div>
-              <h2 className="heading-2 mb-1">
-                Willkommen, <span className="text-gradient">Administrator</span>!
+            <div className="text-white">
+              <h2 className="text-2xl font-bold mb-1">
+                Willkommen, Administrator!
               </h2>
-              <p className="text-muted">
+              <p className="text-red-100">
                 Sie haben vollen Zugriff auf alle Funktionen des Systems.
               </p>
             </div>
@@ -148,7 +157,7 @@ export default function AdminDashboard() {
             }
             label="Benutzer"
             value={stats.totalUsers}
-            color="bg-blue-500"
+            color="bg-red-500"
             delay={0}
           />
           <StatCard
@@ -263,7 +272,7 @@ function ActionCard({
 }) {
   return (
     <button className="action-card w-full text-left">
-      <div className="icon-box icon-box-primary flex-shrink-0">
+      <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0 text-red-600">
         {icon}
       </div>
       <div className="flex-1">

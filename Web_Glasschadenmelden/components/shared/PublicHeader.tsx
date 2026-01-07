@@ -2,11 +2,45 @@
 
 import Link from 'next/link'
 
-export function PublicHeader() {
+interface PublicHeaderProps {
+  userRole?: string | null
+}
+
+export function PublicHeader({ userRole }: PublicHeaderProps) {
+  // Determine dashboard URL based on role
+  const getDashboardUrl = () => {
+    switch (userRole) {
+      case 'admin':
+        return '/admin'
+      case 'versicherung':
+        return '/versicherung'
+      case 'werkstatt':
+        return '/werkstatt'
+      default:
+        return '/role-selection'
+    }
+  }
+
+  // Get role display name and color
+  const getRoleInfo = () => {
+    switch (userRole) {
+      case 'admin':
+        return { name: 'Admin', color: 'bg-red-500' }
+      case 'versicherung':
+        return { name: 'Versicherung', color: 'bg-purple-500' }
+      case 'werkstatt':
+        return { name: 'Werkstatt', color: 'bg-orange-500' }
+      default:
+        return null
+    }
+  }
+
+  const roleInfo = getRoleInfo()
+
   return (
     <header className="navbar">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="logo-link">
+        <Link href={userRole ? '/?home=true' : '/'} className="logo-link">
           <div className="logo-icon">
             <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -17,7 +51,7 @@ export function PublicHeader() {
 
         {/* Centered Navigation */}
         <nav className="hidden md:flex items-center gap-1">
-          <Link href="/" className="nav-link-modern">
+          <Link href={userRole ? '/?home=true' : '/'} className="nav-link-modern">
             <span className="nav-link-text">Home</span>
             <span className="nav-link-indicator" />
           </Link>
@@ -27,12 +61,27 @@ export function PublicHeader() {
           </Link>
         </nav>
 
-        <Link href="/role-selection" className="btn-primary">
-          Anmelden / Registrieren
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
-        </Link>
+        {/* Show Dashboard button if logged in, otherwise show login button */}
+        {userRole && roleInfo ? (
+          <div className="flex items-center gap-3">
+            <span className={`px-3 py-1 rounded-full text-white text-sm font-medium ${roleInfo.color}`}>
+              {roleInfo.name}
+            </span>
+            <Link href={getDashboardUrl()} className="btn-primary">
+              Zum Dashboard
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </Link>
+          </div>
+        ) : (
+          <Link href="/role-selection" className="btn-primary">
+            Anmelden / Registrieren
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </Link>
+        )}
       </div>
     </header>
   )

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getSupabaseClient } from '@/lib/supabase/client'
+import { Settings, ChevronRight, Wrench, MapPin, ClipboardList, Bell, Clock, CheckCircle, LogOut, Plus } from 'lucide-react'
+import { ProfileEditModal } from '@/components/shared/ProfileEditModal'
 
 interface Werkstatt {
   id: string
@@ -33,6 +35,8 @@ export default function WerkstattDashboard() {
   const [claims, setClaims] = useState<Claim[]>([])
   const [stats, setStats] = useState({ total: 0, neu: 0, inBearbeitung: 0, abgeschlossen: 0 })
   const [isLoading, setIsLoading] = useState(true)
+  const [userId, setUserId] = useState<string>('')
+  const [showProfileModal, setShowProfileModal] = useState(false)
 
   const supabase = getSupabaseClient()
 
@@ -72,6 +76,7 @@ export default function WerkstattDashboard() {
       await loadClaims(werkstattData.id)
     }
 
+    setUserId(user.id)
     setIsLoading(false)
   }
 
@@ -125,184 +130,185 @@ export default function WerkstattDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
-        <div className="spinner" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      {/* Header */}
-      <header className="navbar">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link href="/" className="logo-link">
-              <div className="logo-icon">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <span className="logo-text">Glasschaden<span className="logo-text-accent">Melden</span></span>
-            </Link>
-            <div className="h-8 w-px bg-[hsl(var(--border))]" />
-            <div>
-              <h1 className="text-lg font-bold">{primaryStandort?.name || 'Werkstatt'}</h1>
-              <p className="text-sm text-muted">Aufträge verwalten</p>
-            </div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Mobile Header */}
+      <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+            <Wrench className="w-5 h-5 text-white" />
           </div>
-          <div className="flex items-center gap-4">
-            <span className="badge badge-primary">Werkstatt</span>
-            {standorte.length > 1 && (
-              <span className="badge badge-success">{standorte.length} Standorte</span>
-            )}
-            <button onClick={handleLogout} className="btn-secondary text-sm py-2 px-4">
-              Abmelden
-            </button>
+          <div className="min-w-0">
+            <h1 className="font-bold text-base truncate">{primaryStandort?.name || 'Dashboard'}</h1>
+            <p className="text-xs text-slate-500">Werkstatt</p>
           </div>
         </div>
+        <button
+          onClick={() => setShowProfileModal(true)}
+          className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:bg-slate-200 transition-colors"
+        >
+          <Settings className="w-5 h-5 text-slate-600" />
+        </button>
       </header>
 
-      {/* Main */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Welcome */}
-        <div className="card p-8 mb-8 animate-fade-in-up">
-          <div className="flex items-center gap-6">
-            <div className="icon-box icon-box-lg">
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
+      {/* Main Content */}
+      <main className="p-4 pb-28">
+        {/* Welcome Card */}
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-5 mb-5 text-white shadow-lg shadow-orange-500/20">
+          <h2 className="text-lg font-bold mb-1">
+            Hallo, {primaryStandort?.ansprechpartner || 'Werkstatt'}!
+          </h2>
+          <p className="text-orange-100 text-sm">
+            Bearbeiten Sie Aufträge und kommunizieren Sie mit Versicherungen.
+          </p>
+        </div>
+
+        {/* Standorte Badge */}
+        {standorte.length > 1 && (
+          <div className="flex items-center gap-2 mb-4">
+            <MapPin className="w-4 h-4 text-slate-500" />
+            <span className="text-sm text-slate-600 font-medium">{standorte.length} Standorte verwaltet</span>
+          </div>
+        )}
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+            <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center mb-3">
+              <ClipboardList className="w-5 h-5 text-orange-600" />
             </div>
-            <div>
-              <h2 className="heading-2 mb-1">
-                Willkommen, <span className="text-gradient">{primaryStandort?.ansprechpartner}</span>!
-              </h2>
-              <p className="text-muted">
-                Bearbeiten Sie zugewiesene Aufträge und kommunizieren Sie mit Versicherungen.
-              </p>
+            <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+            <p className="text-xs text-slate-500">Aufträge gesamt</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+            <div className="w-10 h-10 rounded-xl bg-yellow-100 flex items-center justify-center mb-3">
+              <Bell className="w-5 h-5 text-yellow-600" />
             </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.neu}</p>
+            <p className="text-xs text-slate-500">Neue Aufträge</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+            <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center mb-3">
+              <Clock className="w-5 h-5 text-orange-600" />
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.inBearbeitung}</p>
+            <p className="text-xs text-slate-500">In Bearbeitung</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+            <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center mb-3">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.abgeschlossen}</p>
+            <p className="text-xs text-slate-500">Erledigt</p>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="stat-card animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <div className="stat-icon bg-blue-500 text-white">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <p className="stat-value">{stats.total}</p>
-            <p className="stat-label">Aufträge gesamt</p>
+        {/* Standorte Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-5">
+          <div className="flex items-center justify-between p-4 border-b border-slate-100">
+            <h3 className="font-bold text-slate-900">Standorte</h3>
+            <button className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+              <Plus className="w-4 h-4 text-orange-600" />
+            </button>
           </div>
-          <div className="stat-card animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
-            <div className="stat-icon bg-yellow-500 text-white">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </div>
-            <p className="stat-value">{stats.neu}</p>
-            <p className="stat-label">Neue Aufträge</p>
-          </div>
-          <div className="stat-card animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <div className="stat-icon bg-orange-500 text-white">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p className="stat-value">{stats.inBearbeitung}</p>
-            <p className="stat-label">In Bearbeitung</p>
-          </div>
-          <div className="stat-card animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
-            <div className="stat-icon bg-green-500 text-white">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p className="stat-value">{stats.abgeschlossen}</p>
-            <p className="stat-label">Erledigt</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Standorte */}
-          <div className="card p-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="heading-3">Standorte</h3>
-              <button className="btn-icon">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </button>
-            </div>
-            <div className="space-y-3">
-              {standorte.map((standort) => (
-                <div key={standort.id} className="p-3 rounded-xl bg-[hsl(var(--muted))] hover:bg-[hsl(var(--primary-50))] transition-colors">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-semibold text-sm">{standort.name}</h4>
+          <div className="divide-y divide-slate-100">
+            {standorte.map((standort) => (
+              <div key={standort.id} className="p-4 flex items-center gap-3 active:bg-slate-50 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-5 h-5 text-slate-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <h4 className="font-semibold text-sm text-slate-900 truncate">{standort.name}</h4>
                     {standort.is_primary && (
-                      <span className="badge badge-primary text-xs py-0.5 px-2">Haupt</span>
+                      <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">Haupt</span>
                     )}
                   </div>
-                  <p className="text-xs text-muted">{standort.adresse}</p>
+                  <p className="text-xs text-slate-500 truncate">{standort.adresse}</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+              </div>
+            ))}
+            {standorte.length === 0 && (
+              <div className="p-6 text-center">
+                <p className="text-sm text-slate-500">Keine Standorte vorhanden</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Claims Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-5">
+          <div className="flex items-center justify-between p-4 border-b border-slate-100">
+            <h3 className="font-bold text-slate-900">Aktuelle Aufträge</h3>
+            <button className="text-sm text-orange-600 font-medium">Alle</button>
+          </div>
+
+          {claims.length === 0 ? (
+            <div className="p-8 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                <ClipboardList className="w-7 h-7 text-slate-400" />
+              </div>
+              <h4 className="font-semibold text-slate-900 mb-1">Keine Aufträge</h4>
+              <p className="text-sm text-slate-500">Neue Aufträge werden hier angezeigt.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {claims.map((claim) => (
+                <div key={claim.id} className="p-4 flex items-center gap-3 active:bg-slate-50 transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                    <ClipboardList className="w-5 h-5 text-slate-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h4 className="font-semibold text-sm text-slate-900 truncate">{claim.vorname} {claim.nachname}</h4>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        claim.status === 'neu' ? 'bg-yellow-100 text-yellow-700' :
+                        claim.status === 'in_bearbeitung' ? 'bg-orange-100 text-orange-700' :
+                        'bg-green-100 text-green-700'
+                      }`}>
+                        {claim.status === 'neu' ? 'Neu' :
+                         claim.status === 'in_bearbeitung' ? 'In Bearb.' :
+                         'Erledigt'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      {claim.kennzeichen} • {new Date(claim.created_at).toLocaleDateString('de-DE')}
+                    </p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Aufträge */}
-          <div className="lg:col-span-2 card p-6 animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="heading-3">Aktuelle Aufträge</h3>
-              <button className="btn-link">Alle anzeigen</button>
-            </div>
-
-            {claims.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="icon-box mx-auto mb-4">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-                <h4 className="font-semibold mb-1">Keine Aufträge</h4>
-                <p className="text-sm text-muted">Neue Aufträge werden hier angezeigt.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {claims.map((claim) => (
-                  <div key={claim.id} className="action-card">
-                    <div className="icon-box flex-shrink-0">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h4 className="font-semibold">{claim.vorname} {claim.nachname}</h4>
-                        <span className={`badge ${
-                          claim.status === 'neu' ? 'badge-warning' :
-                          claim.status === 'in_bearbeitung' ? 'badge-primary' :
-                          'badge-success'
-                        }`}>
-                          {claim.status === 'neu' ? 'Neu' :
-                           claim.status === 'in_bearbeitung' ? 'In Bearbeitung' :
-                           'Erledigt'}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted">
-                        {claim.kennzeichen} • {new Date(claim.created_at).toLocaleDateString('de-DE')}
-                      </p>
-                    </div>
-                    <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          )}
         </div>
+
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          className="w-full py-4 rounded-xl border border-slate-200 bg-white text-slate-600 font-medium flex items-center justify-center gap-2 active:bg-slate-50 transition-colors"
+        >
+          <LogOut className="w-5 h-5" />
+          Abmelden
+        </button>
       </main>
+
+      {/* Profile Edit Modal */}
+      <ProfileEditModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        role="werkstatt"
+        userId={userId}
+        onSave={() => {
+          checkAuth()
+        }}
+      />
     </div>
   )
 }

@@ -59,10 +59,16 @@ export default function RegisterVersicherungPage() {
         return
       }
 
-      // 2. Update Profil mit Rolle
+      // 2. Update Profil mit Rolle und Display-Daten
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ role: 'versicherung' })
+        .update({
+          role: 'versicherung',
+          display_name: formData.ansprechpartner,
+          company_name: formData.firma,
+          phone: formData.telefon,
+          address: formData.adresse,
+        })
         .eq('id', authData.user.id)
 
       if (profileError) {

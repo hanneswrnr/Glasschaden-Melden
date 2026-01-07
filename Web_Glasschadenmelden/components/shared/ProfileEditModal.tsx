@@ -103,7 +103,8 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
     e.preventDefault()
     setIsSaving(true)
 
-    const { error } = await supabase
+    // Update versicherungen table
+    const { error: versicherungError } = await supabase
       .from('versicherungen')
       .update({
         firma: versicherungData.firma,
@@ -115,10 +116,21 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
       })
       .eq('user_id', userId)
 
+    // Also update profiles table for Supabase visibility
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        display_name: versicherungData.ansprechpartner,
+        company_name: versicherungData.firma,
+        phone: versicherungData.telefon,
+        address: versicherungData.adresse,
+      })
+      .eq('id', userId)
+
     setIsSaving(false)
 
-    if (error) {
-      toast.error('Fehler beim Speichern: ' + error.message)
+    if (versicherungError || profileError) {
+      toast.error('Fehler beim Speichern: ' + (versicherungError?.message || profileError?.message))
     } else {
       toast.success('Profil erfolgreich aktualisiert')
       onSave?.()
@@ -132,7 +144,7 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
 
     setIsSaving(true)
 
-    const { error } = await supabase
+    const { error: standortError } = await supabase
       .from('werkstatt_standorte')
       .update({
         name: editingStandort.name,
@@ -142,10 +154,23 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
       })
       .eq('id', editingStandort.id)
 
+    // If editing primary standort, also update profiles table
+    if (editingStandort.is_primary) {
+      await supabase
+        .from('profiles')
+        .update({
+          display_name: editingStandort.ansprechpartner,
+          company_name: editingStandort.name,
+          phone: editingStandort.telefon,
+          address: editingStandort.adresse,
+        })
+        .eq('id', userId)
+    }
+
     setIsSaving(false)
 
-    if (error) {
-      toast.error('Fehler beim Speichern: ' + error.message)
+    if (standortError) {
+      toast.error('Fehler beim Speichern: ' + standortError.message)
     } else {
       toast.success('Standort erfolgreich aktualisiert')
       setEditingStandort(null)

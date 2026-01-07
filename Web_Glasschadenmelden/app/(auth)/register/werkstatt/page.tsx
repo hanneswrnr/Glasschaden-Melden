@@ -56,10 +56,16 @@ export default function RegisterWerkstattPage() {
         return
       }
 
-      // 2. Update Profil mit Rolle
+      // 2. Update Profil mit Rolle und Display-Daten
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ role: 'werkstatt' })
+        .update({
+          role: 'werkstatt',
+          display_name: formData.ansprechpartner,
+          company_name: formData.standortName,
+          phone: formData.telefon,
+          address: formData.adresse,
+        })
         .eq('id', authData.user.id)
 
       if (profileError) {

@@ -16,9 +16,38 @@ export type Json =
   | Json[]
 
 export type UserRole = 'admin' | 'versicherung' | 'werkstatt'
-export type ClaimStatus = 'neu' | 'in_bearbeitung' | 'abgeschlossen' | 'storniert'
-export type DamageType = 'steinschlag' | 'riss' | 'austausch' | 'sonstiges'
+export type ClaimStatus = 'neu' | 'in_bearbeitung' | 'reparatur_abgeschlossen' | 'abgeschlossen' | 'storniert'
+export type DamageType = 'steinschlag' | 'riss' | 'austausch' | 'sonstiges' | 'frontscheibe_steinschlag' | 'frontscheibe_austausch' | 'seitenscheibe_austausch' | 'heckscheibe_austausch'
+export type PaymentStatus = 'nicht_bezahlt' | 'bezahlt'
 export type AuditAction = 'INSERT' | 'UPDATE' | 'DELETE'
+
+// Mapping für Schadensart-Anzeige
+// WICHTIG: Alle Labels müssen die vollständige Beschreibung wie im Formular zeigen
+export const DAMAGE_TYPE_LABELS: Record<DamageType, string> = {
+  steinschlag: 'Frontscheibe Steinschlagreparatur',
+  riss: 'Riss',
+  austausch: 'Frontscheibe Austausch',
+  sonstiges: 'Sonstiges',
+  frontscheibe_steinschlag: 'Frontscheibe Steinschlagreparatur',
+  frontscheibe_austausch: 'Frontscheibe Austausch',
+  seitenscheibe_austausch: 'Seitenscheibe Austausch',
+  heckscheibe_austausch: 'Heckscheibe Austausch',
+}
+
+// Mapping für Status-Anzeige
+export const CLAIM_STATUS_LABELS: Record<ClaimStatus, string> = {
+  neu: 'Neu',
+  in_bearbeitung: 'In Bearbeitung',
+  reparatur_abgeschlossen: 'Reparatur abgeschlossen',
+  abgeschlossen: 'Erledigt',
+  storniert: 'Storniert',
+}
+
+// Mapping für Payment Status
+export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
+  nicht_bezahlt: 'Nicht bezahlt',
+  bezahlt: 'Bezahlt',
+}
 
 export interface Database {
   public: {
@@ -165,78 +194,128 @@ export interface Database {
       claims: {
         Row: {
           id: string
+          auftragsnummer: string
           versicherung_id: string
           werkstatt_standort_id: string | null
+          werkstatt_name: string | null
+          vermittler_firma: string | null
           status: ClaimStatus
+          payment_status: PaymentStatus
           kunde_vorname: string
           kunde_nachname: string
           kunde_telefon: string
-          vers_name: string
-          vers_nr: string
-          selbstbeteiligung: number
-          fahrzeug_marke: string
-          fahrzeug_modell: string
-          kennzeichen: string
-          vin: string
+          vers_name: string | null
+          vers_nr: string | null
+          selbstbeteiligung: number | null
+          fahrzeug_marke: string | null
+          fahrzeug_modell: string | null
+          kennzeichen: string | null
+          vin: string | null
           schaden_datum: string
           schadensart: DamageType
           beschreibung: string | null
           provision_amount: number
           provision_paid: boolean
           is_archived: boolean
+          is_deleted: boolean
+          deleted_at: string | null
           created_at: string
           updated_at: string
           completed_at: string | null
         }
         Insert: {
           id?: string
+          auftragsnummer?: string
           versicherung_id: string
           werkstatt_standort_id?: string | null
+          werkstatt_name?: string | null
+          vermittler_firma?: string | null
           status?: ClaimStatus
+          payment_status?: PaymentStatus
           kunde_vorname: string
           kunde_nachname: string
           kunde_telefon: string
-          vers_name: string
-          vers_nr: string
-          selbstbeteiligung?: number
-          fahrzeug_marke: string
-          fahrzeug_modell: string
-          kennzeichen: string
-          vin: string
+          vers_name?: string | null
+          vers_nr?: string | null
+          selbstbeteiligung?: number | null
+          fahrzeug_marke?: string | null
+          fahrzeug_modell?: string | null
+          kennzeichen?: string | null
+          vin?: string | null
           schaden_datum: string
           schadensart: DamageType
           beschreibung?: string | null
           provision_amount?: number
           provision_paid?: boolean
           is_archived?: boolean
+          is_deleted?: boolean
+          deleted_at?: string | null
           created_at?: string
           updated_at?: string
           completed_at?: string | null
         }
         Update: {
           id?: string
+          auftragsnummer?: string
           versicherung_id?: string
           werkstatt_standort_id?: string | null
+          werkstatt_name?: string | null
+          vermittler_firma?: string | null
           status?: ClaimStatus
+          payment_status?: PaymentStatus
           kunde_vorname?: string
           kunde_nachname?: string
           kunde_telefon?: string
-          vers_name?: string
-          vers_nr?: string
-          selbstbeteiligung?: number
-          fahrzeug_marke?: string
-          fahrzeug_modell?: string
-          kennzeichen?: string
-          vin?: string
+          vers_name?: string | null
+          vers_nr?: string | null
+          selbstbeteiligung?: number | null
+          fahrzeug_marke?: string | null
+          fahrzeug_modell?: string | null
+          kennzeichen?: string | null
+          vin?: string | null
           schaden_datum?: string
           schadensart?: DamageType
           beschreibung?: string | null
           provision_amount?: number
           provision_paid?: boolean
           is_archived?: boolean
+          is_deleted?: boolean
+          deleted_at?: string | null
           created_at?: string
           updated_at?: string
           completed_at?: string | null
+        }
+      }
+      provision_configs: {
+        Row: {
+          id: string
+          versicherung_id: string | null
+          frontscheibe_steinschlag: number
+          frontscheibe_austausch: number
+          seitenscheibe_austausch: number
+          heckscheibe_austausch: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          versicherung_id?: string | null
+          frontscheibe_steinschlag?: number
+          frontscheibe_austausch?: number
+          seitenscheibe_austausch?: number
+          heckscheibe_austausch?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          versicherung_id?: string | null
+          frontscheibe_steinschlag?: number
+          frontscheibe_austausch?: number
+          seitenscheibe_austausch?: number
+          heckscheibe_austausch?: number
+          created_at?: string
+          updated_at?: string
         }
       }
       claim_attachments: {
@@ -350,6 +429,22 @@ export interface Database {
       get_user_role: {
         Args: Record<string, never>
         Returns: UserRole
+      }
+      soft_delete_claim: {
+        Args: { claim_uuid: string }
+        Returns: boolean
+      }
+      restore_claim: {
+        Args: { claim_uuid: string }
+        Returns: boolean
+      }
+      permanent_delete_claim: {
+        Args: { claim_uuid: string }
+        Returns: boolean
+      }
+      unassign_claims_from_standort: {
+        Args: { standort_uuid: string }
+        Returns: number
       }
     }
   }

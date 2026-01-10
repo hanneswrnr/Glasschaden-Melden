@@ -14,11 +14,15 @@ interface Versicherung {
 
 interface Claim {
   id: string
-  vorname: string
-  nachname: string
-  kennzeichen: string
+  auftragsnummer: string
+  kunde_vorname: string
+  kunde_nachname: string
+  kennzeichen: string | null
   status: string
   created_at: string
+  vers_name: string | null
+  schadensart: string
+  werkstatt_name: string | null
 }
 
 export default function VersicherungDashboard() {
@@ -76,6 +80,7 @@ export default function VersicherungDashboard() {
       .from('claims')
       .select('*')
       .eq('versicherung_id', versicherungId)
+      .eq('is_deleted', false)
       .order('created_at', { ascending: false })
       .limit(10)
 
@@ -109,7 +114,7 @@ export default function VersicherungDashboard() {
       <header className="navbar">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link href="/" className="logo-link">
+            <Link href="/?home=true" className="logo-link">
               <div className="logo-icon">
                 <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -171,12 +176,12 @@ export default function VersicherungDashboard() {
                 </p>
               </div>
             </div>
-            <button className="flex items-center gap-2 bg-white text-purple-600 px-6 py-3 rounded-xl font-semibold shadow-lg hover:bg-purple-50 transition-colors">
+            <Link href="/versicherung/schaden-melden" className="flex items-center gap-2 bg-white text-purple-600 px-6 py-3 rounded-xl font-semibold shadow-lg hover:bg-purple-50 transition-colors">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               Neuer Schaden
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -224,7 +229,7 @@ export default function VersicherungDashboard() {
         <div className="card p-8 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
           <div className="flex items-center justify-between mb-6">
             <h3 className="heading-3">Aktuelle Schadensmeldungen</h3>
-            <button className="btn-link">Alle anzeigen</button>
+            <Link href="/versicherung/auftraege" className="btn-link">Alle anzeigen</Link>
           </div>
 
           {claims.length === 0 ? (
@@ -236,17 +241,17 @@ export default function VersicherungDashboard() {
               </div>
               <h4 className="font-semibold mb-2">Keine Schadensmeldungen</h4>
               <p className="text-muted mb-4">Erstellen Sie Ihre erste Schadensmeldung.</p>
-              <button className="btn-primary">
+              <Link href="/versicherung/schaden-melden" className="btn-primary">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
                 Schaden melden
-              </button>
+              </Link>
             </div>
           ) : (
             <div className="space-y-3">
               {claims.map((claim) => (
-                <div key={claim.id} className="action-card">
+                <Link key={claim.id} href={`/versicherung/auftraege/${claim.id}`} className="action-card">
                   <div className="icon-box flex-shrink-0">
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -254,25 +259,30 @@ export default function VersicherungDashboard() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-1">
-                      <h4 className="font-semibold">{claim.vorname} {claim.nachname}</h4>
-                      <span className={`badge ${
-                        claim.status === 'neu' ? 'badge-warning' :
-                        claim.status === 'in_bearbeitung' ? 'badge-primary' :
-                        'badge-success'
+                      <span className="font-mono text-xs text-purple-600 font-medium">{claim.auftragsnummer || '-'}</span>
+                      <h4 className="font-semibold">{claim.kunde_vorname} {claim.kunde_nachname}</h4>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        claim.status === 'neu' ? 'bg-yellow-100 text-yellow-700' :
+                        claim.status === 'in_bearbeitung' ? 'bg-blue-100 text-blue-700' :
+                        claim.status === 'reparatur_abgeschlossen' ? 'bg-purple-100 text-purple-700' :
+                        claim.status === 'storniert' ? 'bg-red-100 text-red-700' :
+                        'bg-green-100 text-green-700'
                       }`}>
                         {claim.status === 'neu' ? 'Neu' :
                          claim.status === 'in_bearbeitung' ? 'In Bearbeitung' :
-                         'Abgeschlossen'}
+                         claim.status === 'reparatur_abgeschlossen' ? 'Reparatur abgeschlossen' :
+                         claim.status === 'storniert' ? 'Storniert' :
+                         'Erledigt'}
                       </span>
                     </div>
                     <p className="text-sm text-muted">
-                      {claim.kennzeichen} • {new Date(claim.created_at).toLocaleDateString('de-DE')}
+                      {claim.kennzeichen || 'Kein Kennzeichen'} • {claim.werkstatt_name || 'Keine Werkstatt'} • {new Date(claim.created_at).toLocaleDateString('de-DE')}
                     </p>
                   </div>
                   <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                </div>
+                </Link>
               ))}
             </div>
           )}

@@ -69,6 +69,26 @@ export const werkstattStandortSchema = z.object({
 // Claim Schemas
 // ============================================
 
+// Alle verfügbaren Schadensarten
+export const schadensartEnum = z.enum([
+  'steinschlag',
+  'riss',
+  'austausch',
+  'sonstiges',
+  'frontscheibe_steinschlag',
+  'frontscheibe_austausch',
+  'seitenscheibe_austausch',
+  'heckscheibe_austausch',
+])
+
+// Neue Schadensarten für das Formular (nur die relevanten)
+export const schadensartFormEnum = z.enum([
+  'frontscheibe_steinschlag',
+  'frontscheibe_austausch',
+  'seitenscheibe_austausch',
+  'heckscheibe_austausch',
+])
+
 export const kundenDatenSchema = z.object({
   kunde_vorname: z.string().min(2, 'Vorname erforderlich'),
   kunde_nachname: z.string().min(2, 'Nachname erforderlich'),
@@ -93,17 +113,60 @@ export const fahrzeugDatenSchema = z.object({
 
 export const schadenDatenSchema = z.object({
   schaden_datum: z.coerce.date(),
-  schadensart: z.enum(['steinschlag', 'riss', 'austausch', 'sonstiges']),
+  schadensart: schadensartEnum,
   beschreibung: z.string().optional(),
 })
 
-// Vollständiges Claim Schema (für Wizard)
+// Vollständiges Claim Schema (für Wizard - Legacy)
 export const claimSchema = kundenDatenSchema
   .merge(fahrzeugDatenSchema)
   .merge(schadenDatenSchema)
   .extend({
     werkstatt_standort_id: z.string().uuid().optional(),
   })
+
+// ============================================
+// Neues Schadensmelde-Formular Schema
+// ============================================
+
+// Pflichtfelder für das neue Formular
+export const claimFormRequiredSchema = z.object({
+  // Kundendaten (Pflicht)
+  kunde_vorname: z.string().min(2, 'Vorname erforderlich'),
+  kunde_nachname: z.string().min(2, 'Nachname erforderlich'),
+  kunde_telefon: z
+    .string()
+    .min(5, 'Telefonnummer erforderlich')
+    .regex(/^[\d\s\-+()]+$/, 'Ungültige Telefonnummer'),
+
+  // Werkstatt & Versicherung (Pflicht)
+  werkstatt_standort_id: z.string().uuid('Werkstatt auswählen'),
+  vers_name: z.string().min(1, 'Versicherung auswählen'),
+
+  // Schadensdetails (Pflicht)
+  schadensart: schadensartFormEnum,
+  schaden_datum: z.string().min(1, 'Schadensdatum erforderlich'),
+})
+
+// Optionale Felder
+export const claimFormOptionalSchema = z.object({
+  vers_nr: z.string().optional().or(z.literal('')),
+  selbstbeteiligung: z.coerce.number().min(0).optional(),
+  kennzeichen: z
+    .string()
+    .regex(/^[A-ZÄÖÜ]{1,3}[\s-]?[A-Z]{1,2}[\s-]?\d{1,4}[EH]?$/i, 'Ungültiges Kennzeichen')
+    .optional()
+    .or(z.literal('')),
+  vin: z
+    .string()
+    .regex(/^[A-HJ-NPR-Z0-9]{17}$/, 'VIN muss 17 Zeichen haben (ohne I, O, Q)')
+    .optional()
+    .or(z.literal('')),
+  beschreibung: z.string().optional(),
+})
+
+// Vollständiges Schema für das neue Formular
+export const claimFormSchema = claimFormRequiredSchema.merge(claimFormOptionalSchema)
 
 // ============================================
 // Type Exports
@@ -117,3 +180,6 @@ export type KundenDatenInput = z.infer<typeof kundenDatenSchema>
 export type FahrzeugDatenInput = z.infer<typeof fahrzeugDatenSchema>
 export type SchadenDatenInput = z.infer<typeof schadenDatenSchema>
 export type ClaimInput = z.infer<typeof claimSchema>
+export type ClaimFormInput = z.infer<typeof claimFormSchema>
+export type SchadensartType = z.infer<typeof schadensartEnum>
+export type SchadensartFormType = z.infer<typeof schadensartFormEnum>

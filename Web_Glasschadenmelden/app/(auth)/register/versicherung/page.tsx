@@ -297,10 +297,18 @@ export default function RegisterVersicherungPage() {
               {/* Step 3: Bank */}
               {step === 3 && (
                 <div className="space-y-4 animate-fade-in-up">
-                  <div className="p-4 bg-[hsl(var(--primary-50))] rounded-xl mb-4">
-                    <p className="text-sm text-[hsl(var(--primary-700))]">
-                      Diese Angaben sind optional und können später ergänzt werden.
-                    </p>
+                  <div className="p-4 bg-[hsl(var(--primary-50))] border border-[hsl(var(--primary-200))] rounded-xl mb-4">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-[hsl(var(--primary-600))] mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm font-medium text-[hsl(var(--primary-700))]">Hinweis zur Bankverbindung</p>
+                        <p className="text-sm text-[hsl(var(--primary-600))] mt-1">
+                          Die IBAN wird für die Auszahlung der Provision benötigt. Falls keine IBAN angegeben wird, erfolgt die Auszahlung bar.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <label className="input-label">Bankname</label>

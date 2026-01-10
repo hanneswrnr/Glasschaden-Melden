@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getSupabaseClient } from '@/lib/supabase/client'
-import { Settings, ChevronRight, Wrench, MapPin, ClipboardList, Bell, Clock, CheckCircle, LogOut, Plus } from 'lucide-react'
+import { DAMAGE_TYPE_LABELS, type DamageType } from '@/lib/supabase/database.types'
+import { Settings, ChevronRight, Wrench, MapPin, ClipboardList, Bell, Clock, CheckCircle, LogOut, Plus, DollarSign, X } from 'lucide-react'
 import { ProfileEditModal } from '@/components/shared/ProfileEditModal'
+import { StandortManageModal } from '@/components/shared/StandortManageModal'
 
 interface Werkstatt {
   id: string
@@ -21,11 +23,22 @@ interface Standort {
 
 interface Claim {
   id: string
-  vorname: string
-  nachname: string
-  kennzeichen: string
+  kunde_vorname: string
+  kunde_nachname: string
+  kennzeichen: string | null
   status: string
   created_at: string
+  schadensart: DamageType
+  vers_name: string | null
+  werkstatt_standort_id: string | null
+  versicherung?: {
+    firma: string
+    ansprechpartner: string
+  }
+  standort?: {
+    name: string
+    adresse: string
+  }
 }
 
 export default function WerkstattDashboard() {
@@ -33,10 +46,14 @@ export default function WerkstattDashboard() {
   const [werkstatt, setWerkstatt] = useState<Werkstatt | null>(null)
   const [standorte, setStandorte] = useState<Standort[]>([])
   const [claims, setClaims] = useState<Claim[]>([])
+  const [allClaims, setAllClaims] = useState<Claim[]>([])
   const [stats, setStats] = useState({ total: 0, neu: 0, inBearbeitung: 0, abgeschlossen: 0 })
   const [isLoading, setIsLoading] = useState(true)
   const [userId, setUserId] = useState<string>('')
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showStandortModal, setShowStandortModal] = useState(false)
+  const [showAllClaimsModal, setShowAllClaimsModal] = useState(false)
+  const [editStandortId, setEditStandortId] = useState<string | null>(null)
 
   const supabase = getSupabaseClient()
 
@@ -102,20 +119,22 @@ export default function WerkstattDashboard() {
     if (standorteData && standorteData.length > 0) {
       const standortIds = standorteData.map(s => s.id)
 
-      const { data: claimsData } = await supabase
+      // Load all claims for stats and modal (exclude deleted)
+      const { data: allClaimsData } = await supabase
         .from('claims')
         .select('*')
         .in('werkstatt_standort_id', standortIds)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false })
-        .limit(10)
 
-      if (claimsData) {
-        setClaims(claimsData)
+      if (allClaimsData) {
+        setAllClaims(allClaimsData)
+        setClaims(allClaimsData.slice(0, 5)) // Only show first 5 in quick view
         setStats({
-          total: claimsData.length,
-          neu: claimsData.filter(c => c.status === 'neu').length,
-          inBearbeitung: claimsData.filter(c => c.status === 'in_bearbeitung').length,
-          abgeschlossen: claimsData.filter(c => c.status === 'abgeschlossen').length,
+          total: allClaimsData.length,
+          neu: allClaimsData.filter(c => c.status === 'neu').length,
+          inBearbeitung: allClaimsData.filter(c => c.status === 'in_bearbeitung').length,
+          abgeschlossen: allClaimsData.filter(c => c.status === 'abgeschlossen').length,
         })
       }
     }
@@ -164,9 +183,16 @@ export default function WerkstattDashboard() {
           <h2 className="text-lg font-bold mb-1">
             Hallo, {primaryStandort?.ansprechpartner || 'Werkstatt'}!
           </h2>
-          <p className="text-orange-100 text-sm">
+          <p className="text-orange-100 text-sm mb-4">
             Bearbeiten Sie Aufträge und kommunizieren Sie mit Versicherungen.
           </p>
+          <Link
+            href="/werkstatt/provisionen"
+            className="inline-flex items-center gap-2 bg-white/20 active:bg-white/30 backdrop-blur-sm text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all"
+          >
+            <DollarSign className="w-4 h-4" />
+            Provisionen
+          </Link>
         </div>
 
         {/* Standorte Badge */}
@@ -213,13 +239,23 @@ export default function WerkstattDashboard() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-5">
           <div className="flex items-center justify-between p-4 border-b border-slate-100">
             <h3 className="font-bold text-slate-900">Standorte</h3>
-            <button className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+            <button
+              onClick={() => setShowStandortModal(true)}
+              className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center active:bg-orange-200 transition-colors"
+            >
               <Plus className="w-4 h-4 text-orange-600" />
             </button>
           </div>
           <div className="divide-y divide-slate-100">
             {standorte.map((standort) => (
-              <div key={standort.id} className="p-4 flex items-center gap-3 active:bg-slate-50 transition-colors">
+              <button
+                key={standort.id}
+                onClick={() => {
+                  setEditStandortId(standort.id)
+                  setShowStandortModal(true)
+                }}
+                className="w-full p-4 flex items-center gap-3 active:bg-slate-50 transition-colors text-left"
+              >
                 <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
                   <MapPin className="w-5 h-5 text-slate-600" />
                 </div>
@@ -233,7 +269,7 @@ export default function WerkstattDashboard() {
                   <p className="text-xs text-slate-500 truncate">{standort.adresse}</p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
-              </div>
+              </button>
             ))}
             {standorte.length === 0 && (
               <div className="p-6 text-center">
@@ -247,7 +283,7 @@ export default function WerkstattDashboard() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-5">
           <div className="flex items-center justify-between p-4 border-b border-slate-100">
             <h3 className="font-bold text-slate-900">Aktuelle Aufträge</h3>
-            <button className="text-sm text-orange-600 font-medium">Alle</button>
+            <button onClick={() => setShowAllClaimsModal(true)} className="text-sm text-orange-600 font-medium">Alle anzeigen</button>
           </div>
 
           {claims.length === 0 ? (
@@ -261,29 +297,44 @@ export default function WerkstattDashboard() {
           ) : (
             <div className="divide-y divide-slate-100">
               {claims.map((claim) => (
-                <div key={claim.id} className="p-4 flex items-center gap-3 active:bg-slate-50 transition-colors">
+                <Link key={claim.id} href={`/werkstatt/auftraege/${claim.id}`} className="p-4 flex items-center gap-3 active:bg-slate-50 transition-colors">
                   <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
                     <ClipboardList className="w-5 h-5 text-slate-600" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <h4 className="font-semibold text-sm text-slate-900 truncate">{claim.vorname} {claim.nachname}</h4>
+                      <h4 className="font-semibold text-sm text-slate-900 truncate">{claim.kunde_vorname} {claim.kunde_nachname}</h4>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                         claim.status === 'neu' ? 'bg-yellow-100 text-yellow-700' :
                         claim.status === 'in_bearbeitung' ? 'bg-orange-100 text-orange-700' :
+                        claim.status === 'reparatur_abgeschlossen' ? 'bg-purple-100 text-purple-700' :
+                        claim.status === 'storniert' ? 'bg-red-100 text-red-700' :
                         'bg-green-100 text-green-700'
                       }`}>
                         {claim.status === 'neu' ? 'Neu' :
                          claim.status === 'in_bearbeitung' ? 'In Bearb.' :
+                         claim.status === 'reparatur_abgeschlossen' ? 'Rep. fertig' :
+                         claim.status === 'storniert' ? 'Storniert' :
                          'Erledigt'}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500">
-                      {claim.kennzeichen} • {new Date(claim.created_at).toLocaleDateString('de-DE')}
+                    <p className="text-xs text-slate-500 truncate">
+                      {DAMAGE_TYPE_LABELS[claim.schadensart] || claim.schadensart} • {new Date(claim.created_at).toLocaleDateString('de-DE')}
                     </p>
+                    {claim.versicherung && (
+                      <p className="text-xs text-orange-600 mt-0.5 truncate">
+                        {claim.versicherung.firma}
+                      </p>
+                    )}
+                    {claim.standort && (
+                      <p className="text-xs text-green-600 mt-0.5 truncate flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {claim.standort.name} - {claim.standort.adresse}
+                      </p>
+                    )}
                   </div>
                   <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -309,6 +360,94 @@ export default function WerkstattDashboard() {
           checkAuth()
         }}
       />
+
+      {/* Standort Manage Modal */}
+      {werkstatt && (
+        <StandortManageModal
+          isOpen={showStandortModal}
+          onClose={() => {
+            setShowStandortModal(false)
+            setEditStandortId(null)
+          }}
+          werkstattId={werkstatt.id}
+          onUpdate={() => {
+            loadStandorte(werkstatt.id)
+          }}
+          editStandortId={editStandortId}
+        />
+      )}
+
+      {/* All Claims Modal */}
+      {showAllClaimsModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50">
+          <div className="bg-white rounded-t-3xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-slide-up">
+            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900">Alle Aufträge ({allClaims.length})</h2>
+              <button
+                onClick={() => setShowAllClaimsModal(false)}
+                className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:bg-slate-200 transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {allClaims.length === 0 ? (
+                <div className="p-8 text-center">
+                  <p className="text-slate-500">Keine Aufträge vorhanden</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {allClaims.map((claim) => (
+                    <Link
+                      key={claim.id}
+                      href={`/werkstatt/auftraege/${claim.id}`}
+                      onClick={() => setShowAllClaimsModal(false)}
+                      className="p-4 flex items-center gap-3 active:bg-slate-50 transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                        <ClipboardList className="w-5 h-5 text-slate-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <h4 className="font-semibold text-sm text-slate-900 truncate">{claim.kunde_vorname} {claim.kunde_nachname}</h4>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            claim.status === 'neu' ? 'bg-yellow-100 text-yellow-700' :
+                            claim.status === 'in_bearbeitung' ? 'bg-orange-100 text-orange-700' :
+                            claim.status === 'reparatur_abgeschlossen' ? 'bg-purple-100 text-purple-700' :
+                            claim.status === 'storniert' ? 'bg-red-100 text-red-700' :
+                            'bg-green-100 text-green-700'
+                          }`}>
+                            {claim.status === 'neu' ? 'Neu' :
+                             claim.status === 'in_bearbeitung' ? 'In Bearb.' :
+                             claim.status === 'reparatur_abgeschlossen' ? 'Rep. fertig' :
+                             claim.status === 'storniert' ? 'Storniert' :
+                             'Erledigt'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 truncate">
+                          {DAMAGE_TYPE_LABELS[claim.schadensart] || claim.schadensart} • {new Date(claim.created_at).toLocaleDateString('de-DE')}
+                        </p>
+                        {claim.versicherung && (
+                          <p className="text-xs text-orange-600 mt-0.5 truncate">
+                            {claim.versicherung.firma}
+                          </p>
+                        )}
+                        {claim.standort && (
+                          <p className="text-xs text-green-600 mt-0.5 truncate flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {claim.standort.name} - {claim.standort.adresse}
+                          </p>
+                        )}
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -531,6 +531,112 @@
   color: hsl(var(--primary-500));
 }
 
+/* Custom Select Styling */
+.select-custom {
+  width: 100%;
+  padding: 0.875rem 2.75rem 0.875rem 1rem;
+  background: hsl(var(--card));
+  border: 1.5px solid hsl(var(--border));
+  border-radius: var(--radius-lg);
+  color: hsl(var(--foreground));
+  font-size: 0.9375rem;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236366f1'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25rem;
+}
+
+.select-custom:hover {
+  border-color: hsl(var(--primary-300));
+}
+
+.select-custom:focus {
+  outline: none;
+  border-color: hsl(var(--primary-500));
+  box-shadow:
+    var(--shadow-sm),
+    0 0 0 4px hsl(var(--primary-100));
+}
+
+.select-custom option {
+  padding: 0.75rem 1rem;
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+}
+
+.select-custom option:checked {
+  background: hsl(var(--primary-100));
+  color: hsl(var(--primary-700));
+}
+
+/* Select with Icon */
+.select-group {
+  position: relative;
+}
+
+.select-group .select-custom {
+  padding-left: 2.75rem;
+}
+
+.select-group-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: hsl(var(--muted-foreground));
+  transition: color var(--transition-base);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.select-group:focus-within .select-group-icon {
+  color: hsl(var(--primary-500));
+}
+
+/* Custom Date Input Styling */
+.date-input-custom {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: hsl(var(--card));
+  border: 1.5px solid hsl(var(--border));
+  border-radius: var(--radius-lg);
+  color: hsl(var(--foreground));
+  font-size: 0.9375rem;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+.date-input-custom:hover {
+  border-color: hsl(var(--primary-300));
+}
+
+.date-input-custom:focus {
+  outline: none;
+  border-color: hsl(var(--primary-500));
+  box-shadow:
+    var(--shadow-sm),
+    0 0 0 4px hsl(var(--primary-100));
+}
+
+/* Style the date picker calendar icon */
+.date-input-custom::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(42%) sepia(93%) saturate(1352%) hue-rotate(213deg) brightness(95%) contrast(94%);
+  opacity: 0.8;
+  transition: opacity var(--transition-base);
+}
+
+.date-input-custom::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 /* ============================================
    ICON CONTAINERS
    ============================================ */

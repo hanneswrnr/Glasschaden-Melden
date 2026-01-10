@@ -45,8 +45,6 @@ export default function LoginPage() {
 
       const userRole = (profile as { role?: string } | null)?.role
 
-      toast.success('Erfolgreich eingeloggt!')
-
       if (userRole === 'admin') {
         router.push('/admin')
       } else if (userRole === 'versicherung') {

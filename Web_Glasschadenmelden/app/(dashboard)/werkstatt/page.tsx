@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getSupabaseClient } from '@/lib/supabase/client'
+import { DAMAGE_TYPE_LABELS, type DamageType } from '@/lib/supabase/database.types'
 import { ProfileEditModal } from '@/components/shared/ProfileEditModal'
+import { StandortManageModal } from '@/components/shared/StandortManageModal'
 
 interface Werkstatt {
   id: string
@@ -20,11 +22,18 @@ interface Standort {
 
 interface Claim {
   id: string
-  vorname: string
-  nachname: string
-  kennzeichen: string
+  auftragsnummer: string
+  kunde_vorname: string
+  kunde_nachname: string
+  kennzeichen: string | null
   status: string
   created_at: string
+  schadensart: DamageType
+  vers_name: string | null
+  werkstatt_standort_id: string | null
+  werkstatt_name: string | null
+  vermittler_firma: string | null
+  is_deleted: boolean
 }
 
 export default function WerkstattDashboard() {
@@ -32,10 +41,14 @@ export default function WerkstattDashboard() {
   const [werkstatt, setWerkstatt] = useState<Werkstatt | null>(null)
   const [standorte, setStandorte] = useState<Standort[]>([])
   const [claims, setClaims] = useState<Claim[]>([])
+  const [allClaims, setAllClaims] = useState<Claim[]>([])
   const [stats, setStats] = useState({ total: 0, neu: 0, inBearbeitung: 0, abgeschlossen: 0 })
   const [isLoading, setIsLoading] = useState(true)
   const [userId, setUserId] = useState<string>('')
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showStandortModal, setShowStandortModal] = useState(false)
+  const [showAllClaimsModal, setShowAllClaimsModal] = useState(false)
+  const [editStandortId, setEditStandortId] = useState<string | null>(null)
 
   const supabase = getSupabaseClient()
 
@@ -101,20 +114,22 @@ export default function WerkstattDashboard() {
     if (standorteData && standorteData.length > 0) {
       const standortIds = standorteData.map(s => s.id)
 
-      const { data: claimsData } = await supabase
+      // Load all claims for stats and modal (exclude deleted)
+      const { data: allClaimsData } = await supabase
         .from('claims')
         .select('*')
         .in('werkstatt_standort_id', standortIds)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false })
-        .limit(10)
 
-      if (claimsData) {
-        setClaims(claimsData)
+      if (allClaimsData) {
+        setAllClaims(allClaimsData)
+        setClaims(allClaimsData.slice(0, 5)) // Only show first 5 in quick view
         setStats({
-          total: claimsData.length,
-          neu: claimsData.filter(c => c.status === 'neu').length,
-          inBearbeitung: claimsData.filter(c => c.status === 'in_bearbeitung').length,
-          abgeschlossen: claimsData.filter(c => c.status === 'abgeschlossen').length,
+          total: allClaimsData.length,
+          neu: allClaimsData.filter(c => c.status === 'neu').length,
+          inBearbeitung: allClaimsData.filter(c => c.status === 'in_bearbeitung').length,
+          abgeschlossen: allClaimsData.filter(c => c.status === 'abgeschlossen').length,
         })
       }
     }
@@ -141,7 +156,7 @@ export default function WerkstattDashboard() {
       <header className="navbar">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link href="/" className="logo-link">
+            <Link href="/?home=true" className="logo-link">
               <div className="logo-icon">
                 <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -197,7 +212,7 @@ export default function WerkstattDashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
-            <div className="text-white">
+            <div className="text-white flex-1">
               <h2 className="text-2xl font-bold mb-1">
                 Willkommen, {primaryStandort?.ansprechpartner}!
               </h2>
@@ -205,6 +220,15 @@ export default function WerkstattDashboard() {
                 Bearbeiten Sie zugewiesene Aufträge und kommunizieren Sie mit Versicherungen.
               </p>
             </div>
+            <Link
+              href="/werkstatt/provisionen"
+              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-5 py-3 rounded-xl font-semibold transition-all"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Provisionen
+            </Link>
           </div>
         </div>
 
@@ -253,7 +277,11 @@ export default function WerkstattDashboard() {
           <div className="card p-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="heading-3">Standorte</h3>
-              <button className="btn-icon">
+              <button
+                onClick={() => setShowStandortModal(true)}
+                className="btn-icon"
+                title="Standorte verwalten"
+              >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
@@ -261,7 +289,14 @@ export default function WerkstattDashboard() {
             </div>
             <div className="space-y-3">
               {standorte.map((standort) => (
-                <div key={standort.id} className="p-3 rounded-xl bg-[hsl(var(--muted))] hover:bg-[hsl(var(--primary-50))] transition-colors">
+                <button
+                  key={standort.id}
+                  onClick={() => {
+                    setEditStandortId(standort.id)
+                    setShowStandortModal(true)
+                  }}
+                  className="w-full p-3 rounded-xl bg-[hsl(var(--muted))] hover:bg-[hsl(var(--primary-50))] transition-colors text-left cursor-pointer"
+                >
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="font-semibold text-sm">{standort.name}</h4>
                     {standort.is_primary && (
@@ -269,7 +304,7 @@ export default function WerkstattDashboard() {
                     )}
                   </div>
                   <p className="text-xs text-muted">{standort.adresse}</p>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -278,7 +313,7 @@ export default function WerkstattDashboard() {
           <div className="lg:col-span-2 card p-6 animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="heading-3">Aktuelle Aufträge</h3>
-              <button className="btn-link">Alle anzeigen</button>
+              <Link href="/werkstatt/auftraege" className="btn-link">Alle anzeigen</Link>
             </div>
 
             {claims.length === 0 ? (
@@ -294,33 +329,51 @@ export default function WerkstattDashboard() {
             ) : (
               <div className="space-y-3">
                 {claims.map((claim) => (
-                  <div key={claim.id} className="action-card">
+                  <Link key={claim.id} href={`/werkstatt/auftraege/${claim.id}`} className="action-card hover:border-orange-200 transition-colors cursor-pointer">
                     <div className="icon-box flex-shrink-0">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
-                        <h4 className="font-semibold">{claim.vorname} {claim.nachname}</h4>
-                        <span className={`badge ${
-                          claim.status === 'neu' ? 'badge-warning' :
-                          claim.status === 'in_bearbeitung' ? 'badge-primary' :
-                          'badge-success'
+                        <h4 className="font-semibold">{claim.kunde_vorname} {claim.kunde_nachname}</h4>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          claim.status === 'neu' ? 'bg-yellow-100 text-yellow-700' :
+                          claim.status === 'in_bearbeitung' ? 'bg-blue-100 text-blue-700' :
+                          claim.status === 'reparatur_abgeschlossen' ? 'bg-purple-100 text-purple-700' :
+                          claim.status === 'storniert' ? 'bg-red-100 text-red-700' :
+                          'bg-green-100 text-green-700'
                         }`}>
                           {claim.status === 'neu' ? 'Neu' :
                            claim.status === 'in_bearbeitung' ? 'In Bearbeitung' :
+                           claim.status === 'reparatur_abgeschlossen' ? 'Reparatur abgeschlossen' :
+                           claim.status === 'storniert' ? 'Storniert' :
                            'Erledigt'}
                         </span>
                       </div>
-                      <p className="text-sm text-muted">
-                        {claim.kennzeichen} • {new Date(claim.created_at).toLocaleDateString('de-DE')}
+                      <p className="text-sm text-muted truncate">
+                        {DAMAGE_TYPE_LABELS[claim.schadensart] || claim.schadensart} • {new Date(claim.created_at).toLocaleDateString('de-DE')}
                       </p>
+                      {claim.versicherung && (
+                        <p className="text-xs text-[hsl(var(--primary-600))] mt-1 truncate">
+                          {claim.versicherung.firma} • {claim.versicherung.ansprechpartner}
+                        </p>
+                      )}
+                      {claim.standort && (
+                        <p className="text-xs text-green-600 mt-1 truncate flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {claim.standort.name} - {claim.standort.adresse}
+                        </p>
+                      )}
                     </div>
-                    <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-5 h-5 text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -339,6 +392,98 @@ export default function WerkstattDashboard() {
           checkAuth()
         }}
       />
+
+      {/* Standort Manage Modal */}
+      {werkstatt && (
+        <StandortManageModal
+          isOpen={showStandortModal}
+          onClose={() => {
+            setShowStandortModal(false)
+            setEditStandortId(null)
+          }}
+          werkstattId={werkstatt.id}
+          onUpdate={() => {
+            loadStandorte(werkstatt.id)
+          }}
+          editStandortId={editStandortId}
+        />
+      )}
+
+      {/* All Claims Modal */}
+      {showAllClaimsModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">Alle Aufträge ({allClaims.length})</h2>
+              <button
+                onClick={() => setShowAllClaimsModal(false)}
+                className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
+              >
+                <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              {allClaims.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted">Keine Aufträge vorhanden</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {allClaims.map((claim) => (
+                    <Link
+                      key={claim.id}
+                      href={`/werkstatt/auftraege/${claim.id}`}
+                      onClick={() => setShowAllClaimsModal(false)}
+                      className="block p-4 rounded-xl border border-slate-200 hover:border-orange-300 hover:bg-orange-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <h4 className="font-semibold">{claim.kunde_vorname} {claim.kunde_nachname}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            claim.status === 'neu' ? 'bg-yellow-100 text-yellow-700' :
+                            claim.status === 'in_bearbeitung' ? 'bg-blue-100 text-blue-700' :
+                            claim.status === 'reparatur_abgeschlossen' ? 'bg-purple-100 text-purple-700' :
+                            claim.status === 'storniert' ? 'bg-red-100 text-red-700' :
+                            'bg-green-100 text-green-700'
+                          }`}>
+                            {claim.status === 'neu' ? 'Neu' :
+                             claim.status === 'in_bearbeitung' ? 'In Bearbeitung' :
+                             claim.status === 'reparatur_abgeschlossen' ? 'Reparatur abgeschlossen' :
+                             claim.status === 'storniert' ? 'Storniert' :
+                             'Erledigt'}
+                          </span>
+                        </div>
+                        <span className="text-sm text-muted">{new Date(claim.created_at).toLocaleDateString('de-DE')}</span>
+                      </div>
+                      <p className="text-sm text-muted">
+                        {DAMAGE_TYPE_LABELS[claim.schadensart] || claim.schadensart}
+                      </p>
+                      <div className="flex items-center gap-4 mt-2">
+                        {claim.versicherung && (
+                          <p className="text-xs text-[hsl(var(--primary-600))]">
+                            {claim.versicherung.firma}
+                          </p>
+                        )}
+                        {claim.standort && (
+                          <p className="text-xs text-green-600 flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            {claim.standort.name} - {claim.standort.adresse}
+                          </p>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

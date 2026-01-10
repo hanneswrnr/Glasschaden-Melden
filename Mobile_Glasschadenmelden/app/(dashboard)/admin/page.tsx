@@ -179,6 +179,16 @@ export default function AdminDashboard() {
             <h3 className="font-bold text-slate-900">Schnellaktionen</h3>
           </div>
           <div className="divide-y divide-slate-100">
+            <Link href="/admin/auftraege" className="w-full p-4 flex items-center gap-3 active:bg-slate-50 transition-colors text-left">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <FileText className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-sm text-slate-900">Alle Aufträge</h4>
+                <p className="text-xs text-slate-500">Aufträge verwalten, bearbeiten & löschen</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+            </Link>
             <button className="w-full p-4 flex items-center gap-3 active:bg-slate-50 transition-colors text-left">
               <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
                 <Plus className="w-5 h-5 text-red-600" />

@@ -15,11 +15,15 @@ interface Versicherung {
 
 interface Claim {
   id: string
-  vorname: string
-  nachname: string
-  kennzeichen: string
+  auftragsnummer: string
+  kunde_vorname: string
+  kunde_nachname: string
+  kennzeichen: string | null
   status: string
   created_at: string
+  vers_name: string | null
+  schadensart: string
+  werkstatt_name: string | null
 }
 
 export default function VersicherungDashboard() {
@@ -77,6 +81,7 @@ export default function VersicherungDashboard() {
       .from('claims')
       .select('*')
       .eq('versicherung_id', versicherungId)
+      .eq('is_deleted', false)
       .order('created_at', { ascending: false })
       .limit(10)
 
@@ -149,10 +154,13 @@ export default function VersicherungDashboard() {
             <p className="text-purple-100 text-sm mb-4">
               Verwalten Sie Ihre Schadensmeldungen.
             </p>
-            <button className="inline-flex items-center gap-2 bg-white text-purple-600 px-4 py-2.5 rounded-xl font-semibold text-sm shadow-lg active:scale-95 transition-transform">
+            <Link
+              href="/versicherung/schaden-melden"
+              className="inline-flex items-center gap-2 bg-white text-purple-600 px-4 py-2.5 rounded-xl font-semibold text-sm shadow-lg active:scale-95 transition-transform"
+            >
               <Plus className="w-4 h-4" />
               Neuer Schaden
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -198,7 +206,7 @@ export default function VersicherungDashboard() {
         <div className="animate-stagger-3">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-slate-900">Aktuelle Meldungen</h3>
-            <button className="text-sm text-purple-600 font-medium">Alle anzeigen</button>
+            <Link href="/versicherung/auftraege" className="text-sm text-purple-600 font-medium">Alle anzeigen</Link>
           </div>
 
           {claims.length === 0 ? (
@@ -208,40 +216,49 @@ export default function VersicherungDashboard() {
               </div>
               <h4 className="font-semibold text-slate-900 mb-1">Keine Meldungen</h4>
               <p className="text-sm text-slate-500 mb-4">Erstellen Sie Ihre erste Schadensmeldung.</p>
-              <button className="inline-flex items-center gap-2 bg-purple-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm active:scale-95 transition-transform">
+              <Link
+                href="/versicherung/schaden-melden"
+                className="inline-flex items-center gap-2 bg-purple-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm active:scale-95 transition-transform"
+              >
                 <Plus className="w-4 h-4" />
                 Schaden melden
-              </button>
+              </Link>
             </div>
           ) : (
             <div className="space-y-2">
               {claims.map((claim) => (
-                <div
+                <Link
                   key={claim.id}
-                  className="bg-white rounded-2xl p-4 flex items-center gap-3 border border-slate-100 active:scale-[0.98] transition-transform"
+                  href={`/versicherung/auftraege/${claim.id}`}
+                  className="bg-white rounded-2xl p-4 flex items-center gap-3 border border-slate-100 active:scale-[0.98] transition-transform block"
                 >
                   <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
                     <FileText className="w-5 h-5 text-purple-600" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <h4 className="font-semibold text-slate-900 truncate">{claim.vorname} {claim.nachname}</h4>
+                      <span className="font-mono text-xs text-purple-600 font-medium">{claim.auftragsnummer || '-'}</span>
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
                         claim.status === 'neu' ? 'bg-amber-100 text-amber-700' :
-                        claim.status === 'in_bearbeitung' ? 'bg-purple-100 text-purple-700' :
+                        claim.status === 'in_bearbeitung' ? 'bg-blue-100 text-blue-700' :
+                        claim.status === 'reparatur_abgeschlossen' ? 'bg-purple-100 text-purple-700' :
+                        claim.status === 'storniert' ? 'bg-red-100 text-red-700' :
                         'bg-emerald-100 text-emerald-700'
                       }`}>
                         {claim.status === 'neu' ? 'Neu' :
                          claim.status === 'in_bearbeitung' ? 'In Arbeit' :
-                         'Fertig'}
+                         claim.status === 'reparatur_abgeschlossen' ? 'Rep. fertig' :
+                         claim.status === 'storniert' ? 'Storniert' :
+                         'Erledigt'}
                       </span>
                     </div>
+                    <h4 className="font-semibold text-slate-900 truncate">{claim.kunde_vorname} {claim.kunde_nachname}</h4>
                     <p className="text-sm text-slate-500 truncate">
-                      {claim.kennzeichen} • {new Date(claim.created_at).toLocaleDateString('de-DE')}
+                      {claim.kennzeichen || '-'} • {claim.werkstatt_name || 'Keine Werkstatt'}
                     </p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-slate-300 flex-shrink-0" />
-                </div>
+                </Link>
               ))}
             </div>
           )}

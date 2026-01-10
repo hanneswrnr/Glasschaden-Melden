@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { CLAIM_STATUS_LABELS, DAMAGE_TYPE_LABELS, type ClaimStatus, type DamageType } from '@/lib/supabase/database.types'
 import { useSuccessAnimation } from '@/components/shared/SuccessAnimation'
+import { ChatContainer } from '@/components/shared/Chat'
 import { ArrowLeft, User, Phone, Shield, Car, AlertTriangle, Wrench, Edit3, Check, X, Trash2, Building2, MapPin, Clock, ChevronDown } from 'lucide-react'
 
 interface Claim {
@@ -27,6 +28,7 @@ interface Claim {
   beschreibung: string | null
   created_at: string
   updated_at: string
+  completed_at: string | null
   versicherung?: {
     firma: string
     ansprechpartner: string
@@ -60,6 +62,7 @@ export default function AdminAuftragDetailPage() {
   const [editData, setEditData] = useState<Partial<Claim>>({})
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [userId, setUserId] = useState<string>('')
 
   useEffect(() => {
     checkAuth()
@@ -71,6 +74,9 @@ export default function AdminAuftragDetailPage() {
       router.push('/login')
       return
     }
+
+    // Store user ID for chat
+    setUserId(user.id)
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -554,6 +560,17 @@ export default function AdminAuftragDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Chat Section Mobile */}
+        <div className="mt-4">
+          <ChatContainer
+            claimId={claim.id}
+            currentUserId={userId}
+            userRole="admin"
+            completedAt={claim.completed_at}
+            isReadOnly={false}
+          />
+        </div>
       </main>
 
       {/* Desktop Content */}
@@ -813,6 +830,17 @@ export default function AdminAuftragDetailPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Chat Section Desktop */}
+        <div className="mt-6">
+          <ChatContainer
+            claimId={claim.id}
+            currentUserId={userId}
+            userRole="admin"
+            completedAt={claim.completed_at}
+            isReadOnly={false}
+          />
         </div>
       </main>
 

@@ -370,6 +370,35 @@ export interface Database {
           created_at?: string
         }
       }
+      message_attachments: {
+        Row: {
+          id: string
+          message_id: string
+          file_path: string
+          file_name: string
+          file_type: string
+          file_size: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          file_path: string
+          file_name: string
+          file_type: string
+          file_size: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          file_path?: string
+          file_name?: string
+          file_type?: string
+          file_size?: number
+          created_at?: string
+        }
+      }
       audit_log: {
         Row: {
           id: string
@@ -457,3 +486,59 @@ export type Insertable<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Insert']
 export type Updatable<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Update']
+
+// Chat Message Types (with joined data)
+export interface ChatMessage {
+  id: string
+  claim_id: string
+  sender_id: string
+  message: string
+  created_at: string
+  // Joined data from profiles
+  sender?: {
+    id: string
+    display_name: string | null
+    company_name: string | null
+    role: UserRole
+  }
+  // Joined attachments
+  attachments?: MessageAttachment[]
+}
+
+export interface MessageAttachment {
+  id: string
+  message_id: string
+  file_path: string
+  file_name: string
+  file_type: string
+  file_size: number
+  created_at: string
+  // Computed URL for display
+  url?: string
+}
+
+// Chat Sender Info for display
+export interface ChatSender {
+  id: string
+  name: string
+  role: UserRole
+}
+
+// Role colors for chat bubbles
+export const CHAT_ROLE_COLORS: Record<UserRole, { bg: string; text: string; badge: string }> = {
+  werkstatt: {
+    bg: 'bg-orange-50',
+    text: 'text-orange-900',
+    badge: 'bg-orange-500 text-white'
+  },
+  versicherung: {
+    bg: 'bg-purple-50',
+    text: 'text-purple-900',
+    badge: 'bg-purple-500 text-white'
+  },
+  admin: {
+    bg: 'bg-red-50',
+    text: 'text-red-900',
+    badge: 'bg-red-500 text-white'
+  }
+}

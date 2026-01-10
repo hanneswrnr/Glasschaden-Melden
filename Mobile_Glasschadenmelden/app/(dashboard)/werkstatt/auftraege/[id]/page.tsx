@@ -8,6 +8,7 @@ import { getSupabaseClient } from '@/lib/supabase/client'
 import { CLAIM_STATUS_LABELS, DAMAGE_TYPE_LABELS, type ClaimStatus, type DamageType } from '@/lib/supabase/database.types'
 import { ArrowLeft, User, Phone, Shield, Car, Calendar, FileText, Building2, Edit3, Check, X, ChevronDown, Printer, MapPin, Trash2 } from 'lucide-react'
 import { useSuccessAnimation } from '@/components/shared/SuccessAnimation'
+import { ChatContainer } from '@/components/shared/Chat'
 
 // Map status to animation color
 const STATUS_COLOR_MAP: Record<ClaimStatus, string> = {
@@ -39,6 +40,7 @@ interface Claim {
   beschreibung: string | null
   created_at: string
   updated_at: string
+  completed_at: string | null
   standort?: {
     name: string
     adresse: string
@@ -70,6 +72,7 @@ export default function AuftragDetailPage() {
   const [standortIds, setStandortIds] = useState<string[]>([])
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [userId, setUserId] = useState<string>('')
 
   useEffect(() => {
     loadClaim()
@@ -81,6 +84,9 @@ export default function AuftragDetailPage() {
       router.push('/login')
       return
     }
+
+    // Store user ID for chat
+    setUserId(user.id)
 
     // Get user's werkstatt and standorte
     const { data: werkstatt } = await supabase
@@ -561,6 +567,17 @@ export default function AuftragDetailPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Chat Section */}
+        <div className="print:hidden">
+          <ChatContainer
+            claimId={claim.id}
+            currentUserId={userId}
+            userRole="werkstatt"
+            completedAt={claim.completed_at}
+            isReadOnly={claim.status === 'abgeschlossen'}
+          />
         </div>
       </main>
 

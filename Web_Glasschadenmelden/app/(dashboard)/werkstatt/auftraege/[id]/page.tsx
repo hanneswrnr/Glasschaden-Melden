@@ -8,6 +8,7 @@ import { getSupabaseClient } from '@/lib/supabase/client'
 import { CLAIM_STATUS_LABELS, DAMAGE_TYPE_LABELS, type ClaimStatus, type DamageType } from '@/lib/supabase/database.types'
 import { StatusSelect } from '@/components/shared/StatusSelect'
 import { useSuccessAnimation } from '@/components/shared/SuccessAnimation'
+import { ChatContainer } from '@/components/shared/Chat'
 import { ArrowLeft, User, Phone, Shield, Car, FileText, Edit3, Check, X, ChevronDown, Printer, Trash2 } from 'lucide-react'
 
 // Map status to animation color
@@ -40,6 +41,7 @@ interface Claim {
   beschreibung: string | null
   created_at: string
   updated_at: string
+  completed_at: string | null
   standort?: {
     name: string
     adresse: string
@@ -71,6 +73,7 @@ export default function AuftragDetailPage() {
   const [standortIds, setStandortIds] = useState<string[]>([])
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [userId, setUserId] = useState<string>('')
 
   useEffect(() => {
     loadClaim()
@@ -82,6 +85,9 @@ export default function AuftragDetailPage() {
       router.push('/login')
       return
     }
+
+    // Store user ID for chat
+    setUserId(user.id)
 
     // Get user's werkstatt and standorte
     const { data: werkstatt } = await supabase
@@ -639,6 +645,17 @@ export default function AuftragDetailPage() {
               )}
             </div>
           </div>
+
+          {/* Chat Section Mobile */}
+          <div className="mt-4">
+            <ChatContainer
+              claimId={claim.id}
+              currentUserId={userId}
+              userRole="werkstatt"
+              completedAt={claim.completed_at}
+              isReadOnly={claim.status === 'abgeschlossen'}
+            />
+          </div>
         </div>
 
         {/* Desktop Data Cards Grid */}
@@ -840,6 +857,17 @@ export default function AuftragDetailPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Chat Section */}
+        <div className="mt-6 print:hidden">
+          <ChatContainer
+            claimId={claim.id}
+            currentUserId={userId}
+            userRole="werkstatt"
+            completedAt={claim.completed_at}
+            isReadOnly={claim.status === 'abgeschlossen'}
+          />
         </div>
       </main>
 

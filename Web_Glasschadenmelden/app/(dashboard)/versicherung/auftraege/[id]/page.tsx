@@ -8,6 +8,7 @@ import { ArrowLeft, User, Phone, Shield, Car, AlertTriangle, Wrench, Edit3, Chec
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { CLAIM_STATUS_LABELS, DAMAGE_TYPE_LABELS, type ClaimStatus, type DamageType } from '@/lib/supabase/database.types'
 import { useSuccessAnimation } from '@/components/shared/SuccessAnimation'
+import { ChatContainer } from '@/components/shared/Chat'
 
 interface Claim {
   id: string
@@ -29,6 +30,7 @@ interface Claim {
   beschreibung: string | null
   created_at: string
   updated_at: string
+  completed_at: string | null
   standort?: {
     name: string
     adresse: string
@@ -55,6 +57,7 @@ export default function VersicherungAuftragDetailPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState<Partial<Claim>>({})
+  const [userId, setUserId] = useState<string>('')
 
   useEffect(() => {
     loadClaim()
@@ -66,6 +69,9 @@ export default function VersicherungAuftragDetailPage() {
       router.push('/login')
       return
     }
+
+    // Store user ID for chat
+    setUserId(user.id)
 
     // Verify user is versicherung
     const { data: versicherung } = await supabase
@@ -416,6 +422,17 @@ export default function VersicherungAuftragDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Chat Section Mobile */}
+          <div className="mt-4">
+            <ChatContainer
+              claimId={claim.id}
+              currentUserId={userId}
+              userRole="versicherung"
+              completedAt={claim.completed_at}
+              isReadOnly={claim.status === 'abgeschlossen'}
+            />
+          </div>
         </div>
 
         {/* Desktop: Status Bar */}
@@ -609,6 +626,17 @@ export default function VersicherungAuftragDetailPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Chat Section Desktop */}
+        <div className="hidden md:block mt-6">
+          <ChatContainer
+            claimId={claim.id}
+            currentUserId={userId}
+            userRole="versicherung"
+            completedAt={claim.completed_at}
+            isReadOnly={claim.status === 'abgeschlossen'}
+          />
         </div>
       </main>
       </div>

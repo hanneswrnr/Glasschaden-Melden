@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { LogIn } from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase/client'
+import { PublicFooter } from '@/components/shared/PublicFooter'
 
 export default function RoleSelectionPage() {
   const router = useRouter()
@@ -50,8 +52,27 @@ export default function RoleSelectionPage() {
 
   return (
     <div className="min-h-screen bg-gradient-hero">
-      {/* Header */}
-      <header className="navbar">
+      {/* Mobile Header */}
+      <header className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-xl bg-[hsl(var(--primary-500))] flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <span className="text-base font-bold text-slate-900">Glasschaden<span className="text-[hsl(var(--primary-500))]">Melden</span></span>
+        </Link>
+        <Link
+          href="/login"
+          className="px-3 py-2 rounded-xl bg-[hsl(var(--primary-500))] text-white text-sm font-medium flex items-center gap-1.5 active:bg-[hsl(var(--primary-600))] transition-colors"
+        >
+          <LogIn className="w-4 h-4" />
+          <span>Anmelden</span>
+        </Link>
+      </header>
+
+      {/* Desktop Header */}
+      <header className="hidden md:block navbar">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="logo-link">
             <div className="logo-icon">
@@ -159,6 +180,8 @@ export default function RoleSelectionPage() {
           </div>
         </div>
       </main>
+
+      <PublicFooter />
     </div>
   )
 }

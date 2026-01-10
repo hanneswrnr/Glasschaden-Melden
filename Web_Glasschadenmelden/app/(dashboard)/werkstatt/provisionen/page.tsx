@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { DAMAGE_TYPE_LABELS, type DamageType, type PaymentStatus } from '@/lib/supabase/database.types'
 import { useSuccessAnimation } from '@/components/shared/SuccessAnimation'
+import { ArrowLeft, DollarSign, AlertCircle, CheckCircle, ChevronRight, ClipboardList } from 'lucide-react'
 
 interface ProvisionClaim {
   id: string
@@ -170,8 +171,9 @@ export default function ProvisionenPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
-        <div className="spinner" />
+      <div className="min-h-screen bg-slate-50 md:bg-gradient-subtle flex items-center justify-center">
+        <div className="md:hidden w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        <div className="hidden md:block spinner" />
       </div>
     )
   }
@@ -179,9 +181,23 @@ export default function ProvisionenPage() {
   return (
     <>
     {AnimationComponent}
-    <div className="min-h-screen bg-gradient-subtle">
-      {/* Header */}
-      <header className="navbar sticky top-0 z-50">
+    <div className="min-h-screen bg-slate-50 md:bg-gradient-subtle flex flex-col">
+      {/* Mobile Header */}
+      <header className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-4 sticky top-0 z-40">
+        <Link
+          href="/werkstatt"
+          className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:scale-95 transition-transform"
+        >
+          <ArrowLeft className="w-5 h-5 text-slate-600" />
+        </Link>
+        <div>
+          <h1 className="font-semibold text-lg">Provisionen</h1>
+          <p className="text-xs text-slate-500">{unpaidCount} offen</p>
+        </div>
+      </header>
+
+      {/* Desktop Header */}
+      <header className="hidden md:block navbar sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/werkstatt" className="btn-icon">
@@ -197,15 +213,44 @@ export default function ProvisionenPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <main className="flex-1 p-4 pb-8 md:max-w-6xl md:mx-auto md:px-6 md:py-8">
+        {/* Mobile Summary Card */}
+        <div className="md:hidden bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-5 mb-4 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-orange-100 text-sm mb-1">Offene Summe</p>
+              <p className="text-3xl font-bold">{unpaidTotal.toFixed(2)} EUR</p>
+            </div>
+            <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
+              <DollarSign className="w-7 h-7 text-white" />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Stats Row */}
+        <div className="md:hidden grid grid-cols-2 gap-3 mb-4">
+          <div className="bg-white rounded-xl p-4 border border-slate-100">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle className="w-4 h-4 text-red-500" />
+              <span className="text-xs text-slate-500">Offen</span>
+            </div>
+            <p className="text-xl font-bold text-slate-900">{unpaidCount}</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 border border-slate-100">
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              <span className="text-xs text-slate-500">Bezahlt</span>
+            </div>
+            <p className="text-xl font-bold text-slate-900">{claims.filter(c => c.payment_status === 'bezahlt').length}</p>
+          </div>
+        </div>
+
+        {/* Desktop Summary Cards */}
+        <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="card p-6 animate-fade-in-up">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
+                <ClipboardList className="w-6 h-6 text-orange-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{claims.length}</p>
@@ -217,9 +262,7 @@ export default function ProvisionenPage() {
           <div className="card p-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <AlertCircle className="w-6 h-6 text-red-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{unpaidCount}</p>
@@ -231,9 +274,7 @@ export default function ProvisionenPage() {
           <div className="card p-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <DollarSign className="w-6 h-6 text-green-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{unpaidTotal.toFixed(2)} EUR</p>
@@ -244,47 +285,125 @@ export default function ProvisionenPage() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-4 md:mb-6 overflow-x-auto pb-1 md:overflow-visible md:pb-0">
           <button
             onClick={() => setFilter('alle')}
-            className={`px-4 py-2 rounded-xl font-medium text-sm transition-all ${
+            className={`px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
               filter === 'alle'
                 ? 'bg-orange-500 text-white'
-                : 'bg-white border border-[hsl(var(--border))] hover:border-orange-300'
+                : 'bg-white border border-slate-200 md:border-[hsl(var(--border))] md:hover:border-orange-300'
             }`}
           >
             Alle ({claims.length})
           </button>
           <button
             onClick={() => setFilter('nicht_bezahlt')}
-            className={`px-4 py-2 rounded-xl font-medium text-sm transition-all ${
+            className={`px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
               filter === 'nicht_bezahlt'
                 ? 'bg-red-500 text-white'
-                : 'bg-white border border-[hsl(var(--border))] hover:border-red-300'
+                : 'bg-white border border-slate-200 md:border-[hsl(var(--border))] md:hover:border-red-300'
             }`}
           >
             Nicht bezahlt ({unpaidCount})
           </button>
           <button
             onClick={() => setFilter('bezahlt')}
-            className={`px-4 py-2 rounded-xl font-medium text-sm transition-all ${
+            className={`px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
               filter === 'bezahlt'
                 ? 'bg-green-500 text-white'
-                : 'bg-white border border-[hsl(var(--border))] hover:border-green-300'
+                : 'bg-white border border-slate-200 md:border-[hsl(var(--border))] md:hover:border-green-300'
             }`}
           >
             Bezahlt ({claims.filter(c => c.payment_status === 'bezahlt').length})
           </button>
         </div>
 
-        {/* Claims List */}
-        <div className="card overflow-hidden">
+        {/* Mobile Claims List */}
+        <div className="md:hidden">
+          {filteredClaims.length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 text-center border border-slate-100">
+              <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                <DollarSign className="w-6 h-6 text-slate-400" />
+              </div>
+              <h4 className="font-semibold text-slate-900 mb-1">Keine Provisionen</h4>
+              <p className="text-sm text-slate-500">
+                {filter === 'nicht_bezahlt'
+                  ? 'Alle Provisionen sind bezahlt.'
+                  : 'Keine Daten vorhanden.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredClaims.map((claim) => (
+                <div
+                  key={claim.id}
+                  className="bg-white rounded-2xl border border-slate-100 overflow-hidden"
+                >
+                  <Link
+                    href={`/werkstatt/provisionen/${claim.id}`}
+                    className="block p-4 active:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="font-semibold text-slate-900">
+                          {claim.kunde_vorname} {claim.kunde_nachname}
+                        </h4>
+                        <p className="text-xs text-slate-500">
+                          {claim.kennzeichen || 'Kein Kennzeichen'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                          claim.payment_status === 'bezahlt'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {claim.payment_status === 'bezahlt' ? 'Bezahlt' : 'Offen'}
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-slate-400" />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-slate-500">
+                        {DAMAGE_TYPE_LABELS[claim.schadensart] || claim.schadensart}
+                      </span>
+                      <span className="font-bold text-green-600">
+                        {getProvision(claim.schadensart).toFixed(2)} EUR
+                      </span>
+                    </div>
+
+                    {claim.vermittler_firma && (
+                      <p className="text-xs text-orange-600">
+                        {claim.vermittler_firma}
+                      </p>
+                    )}
+                  </Link>
+
+                  <div className="px-4 pb-4">
+                    <button
+                      onClick={(e) => { e.preventDefault(); togglePaymentStatus(claim.id, claim.payment_status) }}
+                      className={`w-full py-3 rounded-xl font-medium text-sm transition-all active:scale-[0.98] ${
+                        claim.payment_status === 'bezahlt'
+                          ? 'bg-red-500 text-white'
+                          : 'bg-green-500 text-white'
+                      }`}
+                    >
+                      {claim.payment_status === 'bezahlt' ? 'Als offen markieren' : 'Als bezahlt markieren'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Claims Table */}
+        <div className="hidden md:block card overflow-hidden">
           {filteredClaims.length === 0 ? (
             <div className="p-12 text-center">
               <div className="icon-box icon-box-lg mx-auto mb-4">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
+                <DollarSign className="w-8 h-8" />
               </div>
               <h3 className="heading-3 mb-2">Keine Provisionen</h3>
               <p className="text-muted">

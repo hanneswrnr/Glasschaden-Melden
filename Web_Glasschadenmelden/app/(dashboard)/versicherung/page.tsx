@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { ProfileEditModal } from '@/components/shared/ProfileEditModal'
+import { Settings, ChevronRight, Shield, FileText, Bell, Clock, CheckCircle, LogOut, Plus } from 'lucide-react'
 
 interface Versicherung {
   id: string
@@ -102,16 +103,41 @@ export default function VersicherungDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
-        <div className="spinner" />
+      <div className="min-h-screen bg-slate-50 md:bg-gradient-subtle flex items-center justify-center">
+        {/* Mobile Loading */}
+        <div className="md:hidden w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+        {/* Desktop Loading */}
+        <div className="hidden md:block spinner" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      {/* Header */}
-      <header className="navbar">
+    <div className="min-h-screen bg-slate-50 md:bg-gradient-subtle">
+      {/* Mobile Header */}
+      <header className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/?home=true"
+            className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20 active:scale-95 transition-transform"
+          >
+            <Shield className="w-5 h-5 text-white" />
+          </Link>
+          <div className="min-w-0">
+            <h1 className="font-bold text-base truncate">{versicherung?.firma || 'Dashboard'}</h1>
+            <p className="text-xs text-slate-500">Versicherung</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowProfileModal(true)}
+          className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:bg-slate-200 transition-colors"
+        >
+          <Settings className="w-5 h-5 text-slate-600" />
+        </button>
+      </header>
+
+      {/* Desktop Header */}
+      <header className="hidden md:block navbar">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/?home=true" className="logo-link">
@@ -153,9 +179,26 @@ export default function VersicherungDashboard() {
       </header>
 
       {/* Main */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Welcome */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-purple-500 via-purple-600 to-violet-600 rounded-2xl p-8 mb-8 animate-fade-in-up shadow-lg">
+      <main className="p-4 pb-28 md:pb-8 md:max-w-7xl md:mx-auto md:px-6 md:py-8">
+        {/* Mobile Welcome Card */}
+        <div className="md:hidden bg-gradient-to-br from-purple-500 via-purple-600 to-violet-600 rounded-2xl p-5 mb-5 text-white shadow-lg shadow-purple-500/20">
+          <h2 className="text-lg font-bold mb-1">
+            Hallo, {versicherung?.ansprechpartner || 'Versicherung'}!
+          </h2>
+          <p className="text-purple-100 text-sm mb-4">
+            Verwalten Sie Ihre Schadensmeldungen.
+          </p>
+          <Link
+            href="/versicherung/schaden-melden"
+            className="inline-flex items-center gap-2 bg-white text-purple-600 px-4 py-2.5 rounded-xl font-semibold text-sm shadow-lg active:bg-purple-50 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Neuer Schaden
+          </Link>
+        </div>
+
+        {/* Desktop Welcome Card */}
+        <div className="hidden md:block relative overflow-hidden bg-gradient-to-br from-purple-500 via-purple-600 to-violet-600 rounded-2xl p-8 mb-8 animate-fade-in-up shadow-lg">
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
             <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
@@ -185,8 +228,40 @@ export default function VersicherungDashboard() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* Mobile Stats Grid */}
+        <div className="md:hidden grid grid-cols-2 gap-3 mb-5">
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center mb-3">
+              <FileText className="w-5 h-5 text-purple-600" />
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
+            <p className="text-xs text-slate-500">Gesamt</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+            <div className="w-10 h-10 rounded-xl bg-yellow-100 flex items-center justify-center mb-3">
+              <Bell className="w-5 h-5 text-yellow-600" />
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.neu}</p>
+            <p className="text-xs text-slate-500">Neue Meldungen</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+            <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center mb-3">
+              <Clock className="w-5 h-5 text-orange-600" />
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.inBearbeitung}</p>
+            <p className="text-xs text-slate-500">In Bearbeitung</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+            <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center mb-3">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.abgeschlossen}</p>
+            <p className="text-xs text-slate-500">Abgeschlossen</p>
+          </div>
+        </div>
+
+        {/* Desktop Stats */}
+        <div className="hidden md:grid grid-cols-4 gap-6 mb-8">
           <div className="stat-card animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             <div className="stat-icon bg-purple-500 text-white">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -225,8 +300,71 @@ export default function VersicherungDashboard() {
           </div>
         </div>
 
-        {/* Recent Claims */}
-        <div className="card p-8 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+        {/* Mobile Claims Section */}
+        <div className="md:hidden bg-white rounded-2xl shadow-sm border border-slate-100 mb-5">
+          <div className="flex items-center justify-between p-4 border-b border-slate-100">
+            <h3 className="font-bold text-slate-900">Aktuelle Meldungen</h3>
+            <Link href="/versicherung/auftraege" className="text-sm text-purple-600 font-medium">Alle anzeigen</Link>
+          </div>
+          {claims.length === 0 ? (
+            <div className="p-8 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                <FileText className="w-7 h-7 text-slate-400" />
+              </div>
+              <h4 className="font-semibold text-slate-900 mb-1">Keine Meldungen</h4>
+              <p className="text-sm text-slate-500 mb-4">Erstellen Sie Ihre erste Schadensmeldung.</p>
+              <Link href="/versicherung/schaden-melden" className="inline-flex items-center gap-2 bg-purple-500 text-white px-4 py-2 rounded-xl font-medium text-sm">
+                <Plus className="w-4 h-4" />
+                Schaden melden
+              </Link>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {claims.map((claim) => (
+                <Link key={claim.id} href={`/versicherung/auftraege/${claim.id}`} className="p-4 flex items-center gap-3 active:bg-slate-50 transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-5 h-5 text-slate-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="font-mono text-xs text-purple-600 font-medium">{claim.auftragsnummer || '-'}</span>
+                      <h4 className="font-semibold text-sm text-slate-900 truncate">{claim.kunde_vorname} {claim.kunde_nachname}</h4>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        claim.status === 'neu' ? 'bg-yellow-100 text-yellow-700' :
+                        claim.status === 'in_bearbeitung' ? 'bg-purple-100 text-purple-700' :
+                        claim.status === 'reparatur_abgeschlossen' ? 'bg-purple-100 text-purple-700' :
+                        claim.status === 'storniert' ? 'bg-red-100 text-red-700' :
+                        'bg-green-100 text-green-700'
+                      }`}>
+                        {claim.status === 'neu' ? 'Neu' :
+                         claim.status === 'in_bearbeitung' ? 'In Bearb.' :
+                         claim.status === 'reparatur_abgeschlossen' ? 'Rep. fertig' :
+                         claim.status === 'storniert' ? 'Storniert' :
+                         'Erledigt'}
+                      </span>
+                      <span className="text-xs text-slate-500">{new Date(claim.created_at).toLocaleDateString('de-DE')}</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Logout Button */}
+        <button
+          onClick={handleLogout}
+          className="md:hidden w-full py-4 rounded-xl border border-slate-200 bg-white text-slate-600 font-medium flex items-center justify-center gap-2 active:bg-slate-50 transition-colors"
+        >
+          <LogOut className="w-5 h-5" />
+          Abmelden
+        </button>
+
+        {/* Desktop Recent Claims */}
+        <div className="hidden md:block card p-8 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
           <div className="flex items-center justify-between mb-6">
             <h3 className="heading-3">Aktuelle Schadensmeldungen</h3>
             <Link href="/versicherung/auftraege" className="btn-link">Alle anzeigen</Link>

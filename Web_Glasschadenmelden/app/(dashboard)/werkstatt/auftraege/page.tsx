@@ -8,6 +8,7 @@ import { getSupabaseClient } from '@/lib/supabase/client'
 import { CLAIM_STATUS_LABELS, DAMAGE_TYPE_LABELS, type ClaimStatus, type DamageType } from '@/lib/supabase/database.types'
 import { useSuccessAnimation } from '@/components/shared/SuccessAnimation'
 import { StatusSelect } from '@/components/shared/StatusSelect'
+import { ArrowLeft, Search, FileText, ChevronRight, Trash2 } from 'lucide-react'
 
 interface Claim {
   id: string
@@ -157,8 +158,9 @@ export default function WerkstattAuftraegePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
-        <div className="spinner" />
+      <div className="min-h-screen bg-slate-50 md:bg-gradient-subtle flex items-center justify-center">
+        <div className="md:hidden w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        <div className="hidden md:block spinner" />
       </div>
     )
   }
@@ -166,9 +168,23 @@ export default function WerkstattAuftraegePage() {
   return (
     <>
     {AnimationComponent}
-    <div className="min-h-screen bg-gradient-subtle">
-      {/* Header */}
-      <header className="navbar sticky top-0 z-50">
+    <div className="min-h-screen bg-slate-50 md:bg-gradient-subtle">
+      {/* Mobile Header */}
+      <header className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-4 sticky top-0 z-40">
+        <Link href="/werkstatt" className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:bg-slate-200 transition-colors">
+          <ArrowLeft className="w-5 h-5 text-slate-600" />
+        </Link>
+        <div className="flex-1 min-w-0">
+          <h1 className="font-semibold text-base">Alle Aufträge</h1>
+          <p className="text-xs text-slate-500">{claims.length} Aufträge</p>
+        </div>
+        <Link href="/werkstatt/papierkorb" className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center active:bg-orange-200 transition-colors">
+          <Trash2 className="w-5 h-5 text-orange-600" />
+        </Link>
+      </header>
+
+      {/* Desktop Header */}
+      <header className="hidden md:block navbar sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/werkstatt" className="btn-icon">
@@ -196,9 +212,44 @@ export default function WerkstattAuftraegePage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Filters */}
-        <div className="card p-6 mb-6">
+      <main className="p-4 pb-8 md:max-w-7xl md:mx-auto md:px-6 md:py-8">
+        {/* Mobile Search & Filters */}
+        <div className="md:hidden mb-4">
+          <div className="relative mb-4">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Name, Kennzeichen, Auftragsnr..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-white rounded-xl pl-12 pr-4 py-3 border border-slate-200 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
+            />
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <button
+              onClick={() => setFilter('alle')}
+              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap flex-shrink-0 ${
+                filter === 'alle' ? 'bg-orange-500 text-white' : 'bg-white text-slate-600 border border-slate-200'
+              }`}
+            >
+              Alle
+            </button>
+            {STATUS_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setFilter(option.value)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap flex-shrink-0 ${
+                  filter === option.value ? option.color.replace('100', '500').replace('700', 'white') : option.color
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop Filters */}
+        <div className="hidden md:block card p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             {/* Search */}
             <div className="flex-1 min-w-0">
@@ -240,8 +291,49 @@ export default function WerkstattAuftraegePage() {
           </div>
         </div>
 
-        {/* Claims Table */}
-        <div className="card overflow-hidden">
+        {/* Mobile Claims List */}
+        <div className="md:hidden">
+          {filteredClaims.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
+              <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-500">Keine Aufträge gefunden</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredClaims.map((claim) => {
+                const statusOption = STATUS_OPTIONS.find(s => s.value === claim.status)
+                return (
+                  <Link
+                    key={claim.id}
+                    href={`/werkstatt/auftraege/${claim.id}`}
+                    className="bg-white rounded-2xl border border-slate-200 p-4 block active:scale-[0.98] transition-transform"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-mono text-xs text-orange-600 font-medium mb-1">{claim.auftragsnummer || '-'}</p>
+                        <h3 className="font-semibold text-slate-900 truncate">{claim.kunde_vorname} {claim.kunde_nachname}</h3>
+                        <p className="text-sm text-slate-500">{claim.kennzeichen || '-'}</p>
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-medium flex-shrink-0 ml-2 ${statusOption?.color || ''}`}>
+                        {statusOption?.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500 truncate">{DAMAGE_TYPE_LABELS[claim.schadensart] || claim.schadensart}</span>
+                      <div className="flex items-center gap-1 text-slate-400 flex-shrink-0">
+                        <span>{new Date(claim.schaden_datum).toLocaleDateString('de-DE')}</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Claims Table */}
+        <div className="hidden md:block card overflow-hidden">
           {filteredClaims.length === 0 ? (
             <div className="p-12 text-center">
               <svg className="w-16 h-16 text-muted mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -332,30 +424,28 @@ export default function WerkstattAuftraegePage() {
 
       {/* Delete Confirmation Dialog */}
       {deleteConfirm.show && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-6">
-          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end md:items-center justify-center z-[60] md:p-6">
+          <div className="bg-white rounded-t-3xl md:rounded-2xl w-full md:max-w-md overflow-hidden shadow-xl">
             <div className="p-6 text-center">
               <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
+                <Trash2 className="w-8 h-8 text-orange-600" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-2">In Papierkorb verschieben?</h3>
-              <p className="text-slate-600">
+              <p className="text-slate-600 text-sm md:text-base">
                 Auftrag <span className="font-mono font-semibold text-orange-600">{deleteConfirm.auftragsnummer}</span> von <span className="font-semibold">{deleteConfirm.claimName}</span> wird in den Papierkorb verschoben. Du kannst ihn dort wiederherstellen oder endgültig löschen.
               </p>
             </div>
             <div className="flex border-t border-slate-200">
               <button
                 onClick={() => setDeleteConfirm({ show: false, claimId: null, claimName: '', auftragsnummer: '' })}
-                className="flex-1 py-4 text-slate-700 font-medium border-r border-slate-200 hover:bg-slate-50 transition-colors"
+                className="flex-1 py-4 text-slate-700 font-medium border-r border-slate-200 active:bg-slate-50 md:hover:bg-slate-50 transition-colors"
               >
                 Abbrechen
               </button>
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="flex-1 py-4 text-orange-600 font-semibold hover:bg-orange-50 transition-colors disabled:opacity-50"
+                className="flex-1 py-4 text-orange-600 font-semibold active:bg-orange-50 md:hover:bg-orange-50 transition-colors disabled:opacity-50"
               >
                 {isDeleting ? 'Verschieben...' : 'In Papierkorb'}
               </button>

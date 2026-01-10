@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { CLAIM_STATUS_LABELS, DAMAGE_TYPE_LABELS, type ClaimStatus, type DamageType } from '@/lib/supabase/database.types'
 import { useSuccessAnimation } from '@/components/shared/SuccessAnimation'
+import { ArrowLeft, User, Phone, Shield, Car, AlertTriangle, Wrench, Edit3, Check, X, Trash2, Building2, MapPin, Clock, ChevronDown } from 'lucide-react'
 
 interface Claim {
   id: string
@@ -172,7 +173,7 @@ export default function AdminAuftragDetailPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
-        <div className="spinner" />
+        <div className="w-8 h-8 md:w-10 md:h-10 border-4 border-red-200 border-t-red-600 rounded-full animate-spin" />
       </div>
     )
   }
@@ -184,15 +185,61 @@ export default function AdminAuftragDetailPage() {
   return (
     <>
     {AnimationComponent}
-    <div className="min-h-screen bg-gradient-subtle">
-      {/* Header */}
-      <header className="navbar sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-subtle pb-24 md:pb-8">
+      {/* Mobile Header */}
+      <header className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/auftraege"
+            className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:bg-slate-200 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-slate-600" />
+          </Link>
+          <div>
+            <h1 className="text-base font-bold text-slate-900">Auftrag Details</h1>
+            <p className="text-xs text-slate-500">#{claim.id.slice(0, 8)}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center active:bg-orange-200 transition-colors"
+          >
+            <Trash2 className="w-5 h-5 text-orange-600" />
+          </button>
+          {isEditing ? (
+            <>
+              <button
+                onClick={() => { setIsEditing(false); setEditData(claim) }}
+                className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:bg-slate-200 transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-600" />
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center active:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                <Check className="w-5 h-5 text-white" />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center active:bg-red-700 transition-colors"
+            >
+              <Edit3 className="w-5 h-5 text-white" />
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* Desktop Header */}
+      <header className="hidden md:block navbar sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/admin/auftraege" className="btn-icon">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
               <h1 className="text-lg font-bold">Auftrag Details</h1>
@@ -204,9 +251,7 @@ export default function AdminAuftragDetailPage() {
               onClick={() => setShowDeleteConfirm(true)}
               className="btn-secondary text-orange-600 hover:bg-orange-50 border-orange-200"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+              <Trash2 className="w-4 h-4" />
               Papierkorb
             </button>
             {isEditing ? (
@@ -220,9 +265,7 @@ export default function AdminAuftragDetailPage() {
               </>
             ) : (
               <button onClick={() => setIsEditing(true)} className="btn-primary">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
+                <Edit3 className="w-4 h-4" />
                 Bearbeiten
               </button>
             )}
@@ -230,7 +273,291 @@ export default function AdminAuftragDetailPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      {/* Mobile Content */}
+      <main className="md:hidden px-4 py-4 space-y-4">
+        {/* Status Card */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                <ChevronDown className="w-4 h-4 text-red-600" />
+              </div>
+              <h3 className="font-semibold text-slate-900">Status</h3>
+            </div>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusOption?.color || ''}`}>
+              {statusOption?.label}
+            </span>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {STATUS_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handleStatusChange(option.value)}
+                disabled={isSaving}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors active:scale-95 ${
+                  claim.status === option.value
+                    ? 'ring-2 ring-red-500 ring-offset-1'
+                    : ''
+                } ${option.color}`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Kundendaten Card */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+              <User className="w-4 h-4 text-blue-600" />
+            </div>
+            <h3 className="font-semibold text-slate-900">Kundendaten</h3>
+          </div>
+          {isEditing ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Vorname</label>
+                  <input
+                    type="text"
+                    value={editData.kunde_vorname || ''}
+                    onChange={(e) => setEditData({ ...editData, kunde_vorname: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Nachname</label>
+                  <input
+                    type="text"
+                    value={editData.kunde_nachname || ''}
+                    onChange={(e) => setEditData({ ...editData, kunde_nachname: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Telefon</label>
+                <input
+                  type="tel"
+                  value={editData.kunde_telefon || ''}
+                  onChange={(e) => setEditData({ ...editData, kunde_telefon: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                <span className="text-sm text-slate-500">Name</span>
+                <span className="text-sm font-medium text-slate-900">{claim.kunde_vorname} {claim.kunde_nachname}</span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm text-slate-500">Telefon</span>
+                <a href={`tel:${claim.kunde_telefon}`} className="text-sm font-medium text-red-600">{claim.kunde_telefon}</a>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Versicherungsdaten Card */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+              <Shield className="w-4 h-4 text-purple-600" />
+            </div>
+            <h3 className="font-semibold text-slate-900">Versicherungsdaten</h3>
+          </div>
+          {isEditing ? (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Kundenversicherung</label>
+                <input
+                  type="text"
+                  value={editData.vers_name || ''}
+                  onChange={(e) => setEditData({ ...editData, vers_name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Vers.-Nr.</label>
+                  <input
+                    type="text"
+                    value={editData.vers_nr || ''}
+                    onChange={(e) => setEditData({ ...editData, vers_nr: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Selbstbeteiligung</label>
+                  <input
+                    type="number"
+                    value={editData.selbstbeteiligung || ''}
+                    onChange={(e) => setEditData({ ...editData, selbstbeteiligung: parseFloat(e.target.value) || null })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                <span className="text-sm text-slate-500">Versicherung</span>
+                <span className="text-sm font-medium text-slate-900">{claim.vers_name || '-'}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                <span className="text-sm text-slate-500">Vers.-Nr.</span>
+                <span className="text-sm text-slate-900">{claim.vers_nr || '-'}</span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm text-slate-500">Selbstbeteiligung</span>
+                <span className="text-sm text-slate-900">{claim.selbstbeteiligung ? `${claim.selbstbeteiligung.toFixed(2)} EUR` : '-'}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Fahrzeugdaten Card */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+              <Car className="w-4 h-4 text-green-600" />
+            </div>
+            <h3 className="font-semibold text-slate-900">Fahrzeugdaten</h3>
+          </div>
+          {isEditing ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Kennzeichen</label>
+                <input
+                  type="text"
+                  value={editData.kennzeichen || ''}
+                  onChange={(e) => setEditData({ ...editData, kennzeichen: e.target.value.toUpperCase() })}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">VIN</label>
+                <input
+                  type="text"
+                  value={editData.vin || ''}
+                  onChange={(e) => setEditData({ ...editData, vin: e.target.value.toUpperCase().replace(/[IOQ]/g, '') })}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  maxLength={17}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                <span className="text-sm text-slate-500">Kennzeichen</span>
+                <span className="text-sm font-medium text-slate-900">{claim.kennzeichen || '-'}</span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm text-slate-500">VIN</span>
+                <span className="text-xs font-mono text-slate-900">{claim.vin || '-'}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Schadensdetails Card */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4 text-orange-600" />
+            </div>
+            <h3 className="font-semibold text-slate-900">Schadensdetails</h3>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <span className="text-sm text-slate-500">Schadensart</span>
+              <span className="text-sm font-medium text-slate-900">{DAMAGE_TYPE_LABELS[claim.schadensart] || claim.schadensart}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <span className="text-sm text-slate-500">Datum</span>
+              <span className="text-sm text-slate-900">{new Date(claim.schaden_datum).toLocaleDateString('de-DE')}</span>
+            </div>
+            {isEditing ? (
+              <div className="pt-2">
+                <label className="block text-xs font-medium text-slate-500 mb-1">Beschreibung</label>
+                <textarea
+                  value={editData.beschreibung || ''}
+                  onChange={(e) => setEditData({ ...editData, beschreibung: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent min-h-[80px]"
+                />
+              </div>
+            ) : (
+              <div className="pt-2">
+                <p className="text-xs text-slate-500 mb-1">Beschreibung</p>
+                <p className="text-sm text-slate-900">{claim.beschreibung || 'Keine Beschreibung'}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Vermittler Card */}
+        {claim.versicherung && (
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+                <Building2 className="w-4 h-4 text-indigo-600" />
+              </div>
+              <h3 className="font-semibold text-slate-900">Vermittler</h3>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-slate-900">{claim.versicherung.firma}</p>
+              <p className="text-xs text-slate-500">{claim.versicherung.ansprechpartner}</p>
+              <p className="text-xs text-slate-600">{claim.versicherung.email}</p>
+              <p className="text-xs text-slate-600">{claim.versicherung.telefon}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Werkstatt Card */}
+        {claim.standort && (
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center">
+                <MapPin className="w-4 h-4 text-teal-600" />
+              </div>
+              <h3 className="font-semibold text-slate-900">Werkstatt-Standort</h3>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-slate-900">{claim.standort.name}</p>
+              <p className="text-xs text-slate-500">{claim.standort.adresse}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Metadaten Card */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+              <Clock className="w-4 h-4 text-slate-600" />
+            </div>
+            <h3 className="font-semibold text-slate-900">Metadaten</h3>
+          </div>
+          <div className="space-y-2 text-xs">
+            <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
+              <span className="text-slate-500">Erstellt</span>
+              <span className="text-slate-900">{new Date(claim.created_at).toLocaleString('de-DE')}</span>
+            </div>
+            <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
+              <span className="text-slate-500">Aktualisiert</span>
+              <span className="text-slate-900">{new Date(claim.updated_at).toLocaleString('de-DE')}</span>
+            </div>
+            <div className="flex justify-between items-center py-1.5">
+              <span className="text-slate-500">ID</span>
+              <span className="font-mono text-slate-900">{claim.id.slice(0, 8)}...</span>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Desktop Content */}
+      <main className="hidden md:block max-w-5xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Info */}
           <div className="lg:col-span-2 space-y-6">
@@ -438,9 +765,7 @@ export default function AdminAuftragDetailPage() {
             {claim.versicherung && (
               <div className="card p-6">
                 <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
+                  <Building2 className="w-5 h-5 text-purple-500" />
                   Vermittler
                 </h3>
                 <div className="space-y-2">
@@ -456,10 +781,7 @@ export default function AdminAuftragDetailPage() {
             {claim.standort && (
               <div className="card p-6">
                 <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
+                  <MapPin className="w-5 h-5 text-green-500" />
                   Werkstatt-Standort
                 </h3>
                 <div className="space-y-2">
@@ -471,7 +793,10 @@ export default function AdminAuftragDetailPage() {
 
             {/* Meta Info */}
             <div className="card p-6">
-              <h3 className="font-semibold mb-4">Metadaten</h3>
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-slate-500" />
+                Metadaten
+              </h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted">Erstellt</span>
@@ -493,30 +818,28 @@ export default function AdminAuftragDetailPage() {
 
       {/* Move to Trash Confirmation Dialog */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-6">
-          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl">
-            <div className="p-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-[60] md:p-6">
+          <div className="bg-white rounded-t-3xl md:rounded-2xl w-full md:max-w-md overflow-hidden shadow-xl">
+            <div className="p-5 md:p-6 text-center">
+              <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-3 md:mb-4">
+                <Trash2 className="w-7 h-7 md:w-8 md:h-8 text-orange-600" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">In Papierkorb verschieben?</h3>
-              <p className="text-slate-600">
-                Auftrag <span className="font-mono font-semibold text-red-600">{claim.auftragsnummer}</span> von <span className="font-semibold">{claim.kunde_vorname} {claim.kunde_nachname}</span> wird in den Papierkorb verschoben. Du kannst ihn dort wiederherstellen oder endgültig löschen.
+              <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-2">In Papierkorb verschieben?</h3>
+              <p className="text-sm md:text-base text-slate-600">
+                Auftrag von <span className="font-semibold">{claim.kunde_vorname} {claim.kunde_nachname}</span> wird in den Papierkorb verschoben. Du kannst ihn dort wiederherstellen oder endgültig löschen.
               </p>
             </div>
             <div className="flex border-t border-slate-200">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-4 text-slate-700 font-medium border-r border-slate-200 hover:bg-slate-50 transition-colors"
+                className="flex-1 py-3.5 md:py-4 text-slate-700 font-medium border-r border-slate-200 hover:bg-slate-50 active:bg-slate-100 transition-colors"
               >
                 Abbrechen
               </button>
               <button
                 onClick={handleMoveToTrash}
                 disabled={isDeleting}
-                className="flex-1 py-4 text-orange-600 font-semibold hover:bg-orange-50 transition-colors disabled:opacity-50"
+                className="flex-1 py-3.5 md:py-4 text-orange-600 font-semibold hover:bg-orange-50 active:bg-orange-100 transition-colors disabled:opacity-50"
               >
                 {isDeleting ? 'Verschieben...' : 'In Papierkorb'}
               </button>

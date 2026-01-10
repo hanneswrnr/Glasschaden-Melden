@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { DAMAGE_TYPE_LABELS, type ClaimStatus, type DamageType } from '@/lib/supabase/database.types'
 import { useSuccessAnimation } from '@/components/shared/SuccessAnimation'
+import { ArrowLeft, Search, Trash2, RotateCcw, AlertTriangle, Info } from 'lucide-react'
 
 interface DeletedClaim {
   id: string
@@ -142,7 +143,7 @@ export default function AdminPapierkorbPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
-        <div className="spinner" />
+        <div className="w-8 h-8 md:w-10 md:h-10 border-4 border-red-200 border-t-red-600 rounded-full animate-spin" />
       </div>
     )
   }
@@ -150,15 +151,32 @@ export default function AdminPapierkorbPage() {
   return (
     <>
     {AnimationComponent}
-    <div className="min-h-screen bg-gradient-subtle">
-      {/* Header */}
-      <header className="navbar sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-subtle pb-24 md:pb-8">
+      {/* Mobile Header */}
+      <header className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/auftraege"
+            className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:bg-slate-200 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-slate-600" />
+          </Link>
+          <div>
+            <h1 className="text-base font-bold text-slate-900">Papierkorb</h1>
+            <p className="text-xs text-slate-500">{deletedClaims.length} gelöschte Aufträge</p>
+          </div>
+        </div>
+        <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+          <Trash2 className="w-5 h-5 text-red-600" />
+        </div>
+      </header>
+
+      {/* Desktop Header */}
+      <header className="hidden md:block navbar sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/admin/auftraege" className="btn-icon">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
               <h1 className="text-lg font-bold">Papierkorb</h1>
@@ -169,12 +187,98 @@ export default function AdminPapierkorbPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      {/* Mobile Content */}
+      <main className="md:hidden px-4 py-4 space-y-4">
+        {/* Info Banner */}
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 flex items-start gap-2">
+          <Info className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs text-orange-800 font-medium">Aufträge im Papierkorb</p>
+            <p className="text-xs text-orange-600">Können wiederhergestellt oder endgültig gelöscht werden.</p>
+          </div>
+        </div>
+
+        {/* Search */}
+        {deletedClaims.length > 0 && (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Suche nach Name, Kennzeichen..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200 bg-white text-sm focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none transition-all"
+            />
+          </div>
+        )}
+
+        {/* Deleted Claims Cards */}
+        {filteredClaims.length === 0 ? (
+          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
+            <Trash2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="font-medium text-slate-500">Papierkorb ist leer</p>
+            <p className="text-xs text-slate-400 mt-1">Gelöschte Aufträge erscheinen hier</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredClaims.map((claim) => (
+              <div key={claim.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-semibold text-slate-900">{claim.kunde_vorname} {claim.kunde_nachname}</p>
+                      <p className="text-xs text-slate-500">{claim.kennzeichen || '-'}</p>
+                    </div>
+                    <span className="font-mono text-xs text-slate-400">{claim.auftragsnummer || '-'}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2 text-xs">
+                    <span className="px-2 py-1 bg-slate-100 rounded-md text-slate-600">
+                      {DAMAGE_TYPE_LABELS[claim.schadensart] || claim.schadensart}
+                    </span>
+                    <span className="px-2 py-1 bg-red-50 rounded-md text-red-600">
+                      Gelöscht: {claim.deleted_at ? new Date(claim.deleted_at).toLocaleDateString('de-DE') : '-'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex border-t border-slate-200 divide-x divide-slate-200">
+                  <button
+                    onClick={() => setActionConfirm({
+                      show: true,
+                      type: 'restore',
+                      claimId: claim.id,
+                      claimName: `${claim.kunde_vorname} ${claim.kunde_nachname}`,
+                      auftragsnummer: claim.auftragsnummer || ''
+                    })}
+                    className="flex-1 py-3 flex items-center justify-center gap-2 text-green-600 font-medium active:bg-green-50"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span className="text-sm">Wiederherstellen</span>
+                  </button>
+                  <button
+                    onClick={() => setActionConfirm({
+                      show: true,
+                      type: 'permanent_delete',
+                      claimId: claim.id,
+                      claimName: `${claim.kunde_vorname} ${claim.kunde_nachname}`,
+                      auftragsnummer: claim.auftragsnummer || ''
+                    })}
+                    className="flex-1 py-3 flex items-center justify-center gap-2 text-red-600 font-medium active:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span className="text-sm">Löschen</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* Desktop Content */}
+      <main className="hidden md:block max-w-7xl mx-auto px-6 py-8">
         {/* Info Banner */}
         <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
-          <svg className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <Info className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm text-orange-800 font-medium">Aufträge im Papierkorb</p>
             <p className="text-sm text-orange-600">Gelöschte Aufträge können wiederhergestellt oder endgültig gelöscht werden.</p>
@@ -185,9 +289,7 @@ export default function AdminPapierkorbPage() {
         {deletedClaims.length > 0 && (
           <div className="card p-4 mb-6">
             <div className="relative">
-              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Suche nach Name, Kennzeichen, Auftragsnummer..."
@@ -203,9 +305,7 @@ export default function AdminPapierkorbPage() {
         <div className="card overflow-hidden">
           {filteredClaims.length === 0 ? (
             <div className="p-12 text-center">
-              <svg className="w-16 h-16 text-muted mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+              <Trash2 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
               <p className="text-lg font-medium text-muted">Papierkorb ist leer</p>
               <p className="text-sm text-slate-400 mt-1">Gelöschte Aufträge erscheinen hier</p>
             </div>
@@ -284,50 +384,46 @@ export default function AdminPapierkorbPage() {
 
       {/* Action Confirmation Dialog */}
       {actionConfirm.show && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-6">
-          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl">
-            <div className="p-6 text-center">
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center z-[60] md:p-6">
+          <div className="bg-white rounded-t-3xl md:rounded-2xl w-full md:max-w-md overflow-hidden shadow-xl">
+            <div className="p-5 md:p-6 text-center">
+              <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4 ${
                 actionConfirm.type === 'restore' ? 'bg-green-100' : 'bg-red-100'
               }`}>
                 {actionConfirm.type === 'restore' ? (
-                  <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
+                  <RotateCcw className="w-7 h-7 md:w-8 md:h-8 text-green-600" />
                 ) : (
-                  <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
+                  <AlertTriangle className="w-7 h-7 md:w-8 md:h-8 text-red-600" />
                 )}
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">
+              <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-2">
                 {actionConfirm.type === 'restore' ? 'Auftrag wiederherstellen?' : 'Endgültig löschen?'}
               </h3>
-              <p className="text-slate-600">
+              <p className="text-sm md:text-base text-slate-600">
                 {actionConfirm.type === 'restore' ? (
-                  <>Auftrag <span className="font-mono font-semibold">{actionConfirm.auftragsnummer}</span> von <span className="font-semibold">{actionConfirm.claimName}</span> wird wiederhergestellt und erscheint wieder in der Hauptliste.</>
+                  <>Auftrag von <span className="font-semibold">{actionConfirm.claimName}</span> wird wiederhergestellt und erscheint wieder in der Hauptliste.</>
                 ) : (
-                  <>Auftrag <span className="font-mono font-semibold">{actionConfirm.auftragsnummer}</span> von <span className="font-semibold">{actionConfirm.claimName}</span> wird <span className="text-red-600 font-semibold">unwiderruflich gelöscht</span>. Diese Aktion kann nicht rückgängig gemacht werden.</>
+                  <>Auftrag von <span className="font-semibold">{actionConfirm.claimName}</span> wird <span className="text-red-600 font-semibold">unwiderruflich gelöscht</span>. Diese Aktion kann nicht rückgängig gemacht werden.</>
                 )}
               </p>
             </div>
             <div className="flex border-t border-slate-200">
               <button
                 onClick={() => setActionConfirm({ show: false, type: 'restore', claimId: null, claimName: '', auftragsnummer: '' })}
-                className="flex-1 py-4 text-slate-700 font-medium border-r border-slate-200 hover:bg-slate-50 transition-colors"
+                className="flex-1 py-3.5 md:py-4 text-slate-700 font-medium border-r border-slate-200 hover:bg-slate-50 active:bg-slate-100 transition-colors"
               >
                 Abbrechen
               </button>
               <button
                 onClick={actionConfirm.type === 'restore' ? handleRestore : handlePermanentDelete}
                 disabled={isProcessing}
-                className={`flex-1 py-4 font-semibold transition-colors disabled:opacity-50 ${
+                className={`flex-1 py-3.5 md:py-4 font-semibold transition-colors disabled:opacity-50 ${
                   actionConfirm.type === 'restore'
-                    ? 'text-green-600 hover:bg-green-50'
-                    : 'text-red-600 hover:bg-red-50'
+                    ? 'text-green-600 hover:bg-green-50 active:bg-green-100'
+                    : 'text-red-600 hover:bg-red-50 active:bg-red-100'
                 }`}
               >
-                {isProcessing ? 'Wird verarbeitet...' : (actionConfirm.type === 'restore' ? 'Wiederherstellen' : 'Endgültig löschen')}
+                {isProcessing ? 'Verarbeiten...' : (actionConfirm.type === 'restore' ? 'Wiederherstellen' : 'Löschen')}
               </button>
             </div>
           </div>

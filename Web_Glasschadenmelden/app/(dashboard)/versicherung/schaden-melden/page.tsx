@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { ArrowLeft, FileText, ChevronDown, Send } from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { DEUTSCHE_VERSICHERUNGEN } from '@/lib/constants/versicherungen'
 import { DAMAGE_TYPE_LABELS, type DamageType } from '@/lib/supabase/database.types'
@@ -196,8 +197,25 @@ export default function SchadenMeldenPage() {
     <>
     {AnimationComponent}
     <div className="min-h-screen bg-gradient-hero">
-      {/* Header */}
-      <header className="navbar sticky top-0 z-50">
+      {/* Mobile Header */}
+      <header className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-4 sticky top-0 z-40">
+        <Link
+          href="/versicherung"
+          className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:bg-slate-200 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-slate-600" />
+        </Link>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg font-bold text-slate-900">Schaden melden</h1>
+          <p className="text-xs text-slate-500">Neuen Glasschaden erfassen</p>
+        </div>
+        <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center">
+          <FileText className="w-5 h-5 text-white" />
+        </div>
+      </header>
+
+      {/* Desktop Header */}
+      <header className="hidden md:navbar sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/versicherung" className="flex items-center gap-2 text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary-600))] transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -208,74 +226,74 @@ export default function SchadenMeldenPage() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-6 py-8">
-        <div className="card-elevated p-8 animate-fade-in-up">
+      <main className="flex-1 p-4 pb-8 md:max-w-2xl md:mx-auto md:px-6 md:py-8">
+        <div className="bg-white rounded-xl border border-slate-200 md:card-elevated p-5 md:p-8 animate-fade-in-up">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="icon-box icon-box-lg icon-box-primary mx-auto mb-4">
+          <div className="text-center mb-6 md:mb-8">
+            <div className="hidden md:flex icon-box icon-box-lg icon-box-primary mx-auto mb-4">
               <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h1 className="heading-2 mb-2">Glasschaden melden</h1>
-            <p className="text-muted">Erfassen Sie einen neuen Glasschaden</p>
+            <h1 className="text-xl md:heading-2 font-bold mb-1 md:mb-2">Glasschaden melden</h1>
+            <p className="text-sm md:text-base text-muted">Erfassen Sie einen neuen Glasschaden</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
             {/* Pflichtfelder */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] text-white text-sm flex items-center justify-center">1</span>
+            <div className="space-y-3 md:space-y-4">
+              <h2 className="text-base md:text-lg font-semibold flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] text-white text-xs md:text-sm flex items-center justify-center">1</span>
                 Kundendaten
               </h2>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div>
-                  <label className="input-label">Vorname *</label>
+                  <label className="input-label text-sm">Vorname *</label>
                   <input
                     type="text"
                     required
                     value={formData.kunde_vorname}
                     onChange={(e) => setFormData({ ...formData, kunde_vorname: e.target.value })}
-                    className="input"
+                    className="input h-11 md:h-12"
                     placeholder="Max"
                   />
                 </div>
                 <div>
-                  <label className="input-label">Nachname *</label>
+                  <label className="input-label text-sm">Nachname *</label>
                   <input
                     type="text"
                     required
                     value={formData.kunde_nachname}
                     onChange={(e) => setFormData({ ...formData, kunde_nachname: e.target.value })}
-                    className="input"
+                    className="input h-11 md:h-12"
                     placeholder="Mustermann"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="input-label">Telefonnummer *</label>
+                <label className="input-label text-sm">Telefonnummer *</label>
                 <input
                   type="tel"
                   required
                   value={formData.kunde_telefon}
                   onChange={(e) => setFormData({ ...formData, kunde_telefon: e.target.value })}
-                  className="input"
+                  className="input h-11 md:h-12"
                   placeholder="+49 123 456789"
                 />
               </div>
             </div>
 
             {/* Werkstatt & Versicherung */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] text-white text-sm flex items-center justify-center">2</span>
+            <div className="space-y-3 md:space-y-4">
+              <h2 className="text-base md:text-lg font-semibold flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] text-white text-xs md:text-sm flex items-center justify-center">2</span>
                 Zuweisung
               </h2>
 
               <div>
-                <label className="input-label">Werkstatt *</label>
+                <label className="input-label text-sm">Werkstatt *</label>
                 <CustomSelect
                   options={werkstaetten.map((w) => ({ value: w.id, label: `${w.name} - ${w.adresse}` }))}
                   value={formData.werkstatt_standort_id}
@@ -291,7 +309,7 @@ export default function SchadenMeldenPage() {
               </div>
 
               <div>
-                <label className="input-label">Versicherung des Kunden *</label>
+                <label className="input-label text-sm">Versicherung des Kunden *</label>
                 <CustomSelect
                   options={DEUTSCHE_VERSICHERUNGEN.map((v) => ({ value: v.name, label: v.name }))}
                   value={formData.vers_name}
@@ -308,14 +326,14 @@ export default function SchadenMeldenPage() {
             </div>
 
             {/* Schadensdetails */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] text-white text-sm flex items-center justify-center">3</span>
+            <div className="space-y-3 md:space-y-4">
+              <h2 className="text-base md:text-lg font-semibold flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-[hsl(var(--primary-500))] text-white text-xs md:text-sm flex items-center justify-center">3</span>
                 Schadensdetails
               </h2>
 
               <div>
-                <label className="input-label">Schadensart *</label>
+                <label className="input-label text-sm">Schadensart *</label>
                 <CustomSelect
                   options={SCHADENSARTEN.map((s) => ({ value: s.value, label: s.label }))}
                   value={formData.schadensart}
@@ -331,7 +349,7 @@ export default function SchadenMeldenPage() {
               </div>
 
               <div>
-                <label className="input-label">Schadensdatum *</label>
+                <label className="input-label text-sm">Schadensdatum *</label>
                 <CustomDatePicker
                   value={formData.schaden_datum}
                   onChange={(value) => setFormData({ ...formData, schaden_datum: value })}
@@ -351,70 +369,65 @@ export default function SchadenMeldenPage() {
               <button
                 type="button"
                 onClick={() => setShowDetails(!showDetails)}
-                className="w-full px-4 py-3 flex items-center justify-between bg-[hsl(var(--muted))]/50 hover:bg-[hsl(var(--muted))] transition-colors"
+                className="w-full px-3 md:px-4 py-3 flex items-center justify-between bg-[hsl(var(--muted))]/50 active:bg-[hsl(var(--muted))] md:hover:bg-[hsl(var(--muted))] transition-colors"
               >
-                <span className="font-medium flex items-center gap-2">
+                <span className="font-medium text-sm md:text-base flex items-center gap-2">
                   <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                   Weitere Details (optional)
                 </span>
-                <svg
+                <ChevronDown
                   className={`w-5 h-5 transition-transform ${showDetails ? 'rotate-180' : ''}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                />
               </button>
 
               {showDetails && (
-                <div className="p-4 space-y-4 animate-fade-in-up">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 md:p-4 space-y-3 md:space-y-4 animate-fade-in-up">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                     <div>
-                      <label className="input-label">Versicherungsnummer</label>
+                      <label className="input-label text-sm">Versicherungsnummer</label>
                       <input
                         type="text"
                         value={formData.vers_nr}
                         onChange={(e) => setFormData({ ...formData, vers_nr: e.target.value })}
-                        className="input"
+                        className="input h-11 md:h-12"
                         placeholder="VS-123456"
                       />
                     </div>
                     <div>
-                      <label className="input-label">Selbstbeteiligung (EUR)</label>
+                      <label className="input-label text-sm">Selbstbeteiligung (EUR)</label>
                       <input
                         type="number"
                         min="0"
                         step="0.01"
                         value={formData.selbstbeteiligung}
                         onChange={(e) => setFormData({ ...formData, selbstbeteiligung: e.target.value })}
-                        className="input"
+                        className="input h-11 md:h-12"
                         placeholder="150.00"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                     <div>
-                      <label className="input-label">Kennzeichen</label>
+                      <label className="input-label text-sm">Kennzeichen</label>
                       <input
                         type="text"
                         value={formData.kennzeichen}
                         onChange={(e) => setFormData({ ...formData, kennzeichen: e.target.value.toUpperCase() })}
-                        className="input"
+                        className="input h-11 md:h-12"
                         placeholder="M-AB 1234"
                       />
                     </div>
                     <div>
-                      <label className="input-label">VIN / Fahrgestellnummer</label>
+                      <label className="input-label text-sm">VIN / Fahrgestellnummer</label>
                       <input
                         type="text"
                         maxLength={17}
                         value={formData.vin}
                         onChange={(e) => setFormData({ ...formData, vin: e.target.value.toUpperCase().replace(/[IOQ]/g, '') })}
-                        className="input"
+                        className="input h-11 md:h-12"
                         placeholder="WVWZZZ3CZWE123456"
                       />
                       <p className="text-xs text-muted mt-1">17 Zeichen, ohne I, O, Q</p>
@@ -422,11 +435,11 @@ export default function SchadenMeldenPage() {
                   </div>
 
                   <div>
-                    <label className="input-label">Beschreibung / Anmerkungen</label>
+                    <label className="input-label text-sm">Beschreibung / Anmerkungen</label>
                     <textarea
                       value={formData.beschreibung}
                       onChange={(e) => setFormData({ ...formData, beschreibung: e.target.value })}
-                      className="input min-h-[100px]"
+                      className="input min-h-[80px] md:min-h-[100px]"
                       placeholder="Weitere Informationen zum Schaden..."
                     />
                   </div>
@@ -438,23 +451,17 @@ export default function SchadenMeldenPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="btn-primary w-full py-4 text-lg"
+              className="btn-primary w-full py-3 md:py-4 text-base md:text-lg active:scale-[0.98] transition-transform"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="spinner-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   Wird gemeldet...
                 </span>
               ) : (
                 <>
                   Schaden melden
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
+                  <Send className="w-5 h-5" />
                 </>
               )}
             </button>

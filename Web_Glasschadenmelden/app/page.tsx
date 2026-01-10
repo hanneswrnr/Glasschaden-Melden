@@ -86,14 +86,14 @@ export default function LandingPage() {
             Schnelle Schadensmeldung, reibungslose Abwicklung – für alle Beteiligten.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Link href="/role-selection" className="btn-primary text-lg px-8 py-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-8 md:mb-16 px-4 sm:px-0">
+            <Link href="/role-selection" className="btn-primary w-full sm:w-auto text-base sm:text-lg px-8 py-4">
               Jetzt starten
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
             </Link>
-            <Link href="/info" className="btn-secondary text-lg px-8 py-4">
+            <Link href="/info" className="btn-secondary w-full sm:w-auto text-base sm:text-lg px-8 py-4">
               Mehr erfahren
             </Link>
           </div>

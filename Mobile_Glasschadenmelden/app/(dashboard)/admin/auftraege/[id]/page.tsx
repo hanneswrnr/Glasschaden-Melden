@@ -12,6 +12,7 @@ import { ArrowLeft, Trash2, Edit3, Check, X, Phone, Building2, MapPin, Calendar,
 
 interface Claim {
   id: string
+  auftragsnummer: string | null
   versicherung_id: string
   werkstatt_standort_id: string | null
   status: ClaimStatus
@@ -44,7 +45,7 @@ interface Claim {
 const STATUS_OPTIONS: { value: ClaimStatus; label: string; color: string }[] = [
   { value: 'neu', label: 'Neu', color: 'bg-yellow-100 text-yellow-700' },
   { value: 'in_bearbeitung', label: 'In Bearbeitung', color: 'bg-blue-100 text-blue-700' },
-  { value: 'reparatur_abgeschlossen', label: 'Reparatur fertig', color: 'bg-purple-100 text-purple-700' },
+  { value: 'reparatur_abgeschlossen', label: 'Reparatur abgeschlossen', color: 'bg-purple-100 text-purple-700' },
   { value: 'abgeschlossen', label: 'Erledigt', color: 'bg-green-100 text-green-700' },
 ]
 
@@ -106,8 +107,36 @@ export default function AdminAuftragDetailPage() {
       return
     }
 
-    setClaim(claimData as Claim)
-    setEditData(claimData)
+    // Load versicherung info
+    let versicherungData = null
+    if (claimData.versicherung_id) {
+      const { data: vers } = await supabase
+        .from('versicherungen')
+        .select('firma, ansprechpartner, email, telefon')
+        .eq('id', claimData.versicherung_id)
+        .single()
+      versicherungData = vers
+    }
+
+    // Load standort info
+    let standortData = null
+    if (claimData.werkstatt_standort_id) {
+      const { data: standort } = await supabase
+        .from('werkstatt_standorte')
+        .select('name, adresse')
+        .eq('id', claimData.werkstatt_standort_id)
+        .single()
+      standortData = standort
+    }
+
+    const claimWithDetails = {
+      ...claimData,
+      versicherung: versicherungData,
+      standort: standortData
+    } as Claim
+
+    setClaim(claimWithDetails)
+    setEditData(claimWithDetails)
     setIsLoading(false)
   }
 
@@ -115,15 +144,25 @@ export default function AdminAuftragDetailPage() {
     if (!claim) return
 
     setIsSaving(true)
+    // Set completed_at when status changes to 'abgeschlossen', reset to null otherwise
+    const updateData = {
+      status: newStatus,
+      updated_at: new Date().toISOString(),
+      completed_at: newStatus === 'abgeschlossen' ? new Date().toISOString() : null
+    }
     const { error } = await supabase
       .from('claims')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .update(updateData)
       .eq('id', claim.id)
 
     if (error) {
       toast.error('Fehler beim Aktualisieren')
     } else {
-      setClaim({ ...claim, status: newStatus })
+      setClaim({
+        ...claim,
+        status: newStatus,
+        completed_at: newStatus === 'abgeschlossen' ? new Date().toISOString() : null
+      })
       showStatus(CLAIM_STATUS_LABELS[newStatus], newStatus)
     }
     setIsSaving(false)
@@ -205,7 +244,7 @@ export default function AdminAuftragDetailPage() {
           </Link>
           <div>
             <h1 className="font-semibold text-base">Auftrag Details</h1>
-            <p className="text-xs text-slate-500">#{claim.id.slice(0, 8)}</p>
+            <p className="text-xs text-red-600 font-mono font-medium">{claim.auftragsnummer || `#${claim.id.slice(0, 8)}`}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

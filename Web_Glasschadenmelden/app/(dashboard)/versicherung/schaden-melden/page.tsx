@@ -215,7 +215,7 @@ export default function SchadenMeldenPage() {
       </header>
 
       {/* Desktop Header */}
-      <header className="hidden md:navbar sticky top-0 z-50">
+      <header className="hidden md:block navbar">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/versicherung" className="flex items-center gap-2 text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary-600))] transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

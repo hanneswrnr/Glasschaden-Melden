@@ -35,10 +35,57 @@ export function ChatContainer({
     ? Math.max(0, 14 - Math.floor((Date.now() - new Date(completedAt).getTime()) / (1000 * 60 * 60 * 24)))
     : null
 
+  // Chat is only read-only after 14 days have passed since completion
+  // (unless explicitly set to read-only via prop, e.g., for admin override)
+  const effectiveIsReadOnly = isReadOnly && completedAt
+    ? daysUntilDeletion === 0
+    : false
+
   // Scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
+
+  // Helper function to get sender info based on role
+  const getSenderInfo = async (senderId: string, role: string) => {
+    let displayName = 'Unbekannt'
+    let address = ''
+
+    if (role === 'versicherung') {
+      const { data: versicherung } = await supabase
+        .from('versicherungen')
+        .select('firma, adresse')
+        .eq('user_id', senderId)
+        .single()
+      if (versicherung) {
+        displayName = versicherung.firma
+        address = versicherung.adresse
+      }
+    } else if (role === 'werkstatt') {
+      // Get the primary standort of the werkstatt
+      const { data: werkstatt } = await supabase
+        .from('werkstaetten')
+        .select('id')
+        .eq('user_id', senderId)
+        .single()
+      if (werkstatt) {
+        const { data: standort } = await supabase
+          .from('werkstatt_standorte')
+          .select('name, adresse')
+          .eq('werkstatt_id', werkstatt.id)
+          .eq('is_primary', true)
+          .single()
+        if (standort) {
+          displayName = standort.name
+          address = standort.adresse
+        }
+      }
+    } else if (role === 'admin') {
+      displayName = 'Administrator'
+    }
+
+    return { displayName, address }
+  }
 
   // Load messages
   const loadMessages = useCallback(async () => {
@@ -49,7 +96,10 @@ export function ChatContainer({
         claim_id,
         sender_id,
         message,
-        created_at
+        created_at,
+        sender_role,
+        sender_name,
+        sender_address
       `)
       .eq('claim_id', claimId)
       .order('created_at', { ascending: true })
@@ -60,36 +110,45 @@ export function ChatContainer({
     }
 
     if (data) {
-      // Load sender info and attachments for each message
+      // Load attachments for each message - sender info is now stored in the message itself
       const messagesWithDetails = await Promise.all(
-        data.map(async (msg) => {
-          // Get sender profile
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('id, display_name, company_name, role')
-            .eq('id', msg.sender_id)
-            .single()
-
+        data.map(async (msg: {
+          id: string
+          claim_id: string
+          sender_id: string
+          message: string
+          created_at: string
+          sender_role: string | null
+          sender_name: string | null
+          sender_address: string | null
+        }) => {
           // Get attachments
           const { data: attachments } = await supabase
             .from('message_attachments')
             .select('*')
             .eq('message_id', msg.id)
 
+          // Use stored sender info from message (no profile query needed)
           return {
             ...msg,
-            sender: profile || undefined,
+            sender: msg.sender_role ? {
+              id: msg.sender_id,
+              display_name: msg.sender_name || 'Unbekannt',
+              company_name: msg.sender_name || 'Unbekannt',
+              address: msg.sender_address || '',
+              role: msg.sender_role as UserRole
+            } : undefined,
             attachments: attachments || []
           } as ChatMessage
         })
       )
 
       setMessages(messagesWithDetails)
-      setTimeout(scrollToBottom, 100)
+      // Don't auto-scroll on initial load - user might want to read from top
     }
 
     setIsLoading(false)
-  }, [claimId, supabase, scrollToBottom])
+  }, [claimId, supabase])
 
   // Setup realtime subscription
   useEffect(() => {
@@ -107,36 +166,42 @@ export function ChatContainer({
           filter: `claim_id=eq.${claimId}`
         },
         async (payload) => {
-          const newMessage = payload.new as ChatMessage
+          const newMessage = payload.new as {
+            id: string
+            claim_id: string
+            sender_id: string
+            message: string
+            created_at: string
+            sender_role: string | null
+            sender_name: string | null
+            sender_address: string | null
+          }
 
           // Only add if not from current user (they already have it via optimistic update)
           if (newMessage.sender_id !== currentUserId) {
-            // Get sender profile
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('id, display_name, company_name, role')
-              .eq('id', newMessage.sender_id)
-              .single()
-
             // Get attachments
             const { data: attachments } = await supabase
               .from('message_attachments')
               .select('*')
               .eq('message_id', newMessage.id)
 
+            // Use sender info stored in the message (no profile query needed)
             setMessages(prev => [...prev, {
               ...newMessage,
-              sender: profile || undefined,
+              sender: newMessage.sender_role ? {
+                id: newMessage.sender_id,
+                display_name: newMessage.sender_name || 'Unbekannt',
+                company_name: newMessage.sender_name || 'Unbekannt',
+                address: newMessage.sender_address || '',
+                role: newMessage.sender_role as UserRole
+              } : undefined,
               attachments: attachments || []
             }])
 
             scrollToBottom()
 
             // Show notification for new message
-            if (profile) {
-              const senderName = profile.display_name || profile.company_name || 'Unbekannt'
-              toast.info(`Neue Nachricht von ${senderName}`)
-            }
+            toast.info(`Neue Nachricht von ${newMessage.sender_name || 'Unbekannt'}`)
           }
         }
       )
@@ -157,9 +222,15 @@ export function ChatContainer({
       // Get current user's profile for optimistic update
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, display_name, company_name, role')
+        .select('id, role')
         .eq('id', currentUserId)
         .single()
+
+      // Get actual sender info
+      let senderInfo = { displayName: 'Unbekannt', address: '' }
+      if (profile) {
+        senderInfo = await getSenderInfo(currentUserId, profile.role)
+      }
 
       // Optimistic update
       const tempId = `temp-${Date.now()}`
@@ -169,20 +240,29 @@ export function ChatContainer({
         sender_id: currentUserId,
         message: text,
         created_at: new Date().toISOString(),
-        sender: profile || undefined,
+        sender: profile ? {
+          id: profile.id,
+          display_name: senderInfo.displayName,
+          company_name: senderInfo.displayName,
+          address: senderInfo.address,
+          role: profile.role
+        } : undefined,
         attachments: []
       }
 
       setMessages(prev => [...prev, tempMessage])
       scrollToBottom()
 
-      // Insert message to database
+      // Insert message to database with sender info
       const { data: newMessage, error: messageError } = await supabase
         .from('claim_messages')
         .insert({
           claim_id: claimId,
           sender_id: currentUserId,
-          message: text
+          message: text,
+          sender_role: profile?.role || userRole,
+          sender_name: senderInfo.displayName,
+          sender_address: senderInfo.address
         })
         .select()
         .single()
@@ -228,7 +308,13 @@ export function ChatContainer({
         msg.id === tempId
           ? {
             ...newMessage,
-            sender: profile || undefined,
+            sender: profile ? {
+              id: profile.id,
+              display_name: senderInfo.displayName,
+              company_name: senderInfo.displayName,
+              address: senderInfo.address,
+              role: profile.role
+            } : undefined,
             attachments: uploadedAttachments
           }
           : msg
@@ -282,8 +368,8 @@ export function ChatContainer({
       {/* Chat Content */}
       {isExpanded && (
         <div className="border-t border-slate-200">
-          {/* Deletion Warning */}
-          {isReadOnly && daysUntilDeletion !== null && (
+          {/* Deletion Warning - show when claim is completed, even if chat is still active */}
+          {isReadOnly && daysUntilDeletion !== null && daysUntilDeletion > 0 && (
             <div className="px-4 py-2 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
               <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
               <p className="text-xs text-amber-700">
@@ -314,7 +400,7 @@ export function ChatContainer({
           </div>
 
           {/* Input */}
-          {!isReadOnly ? (
+          {!effectiveIsReadOnly ? (
             <MessageInput
               onSend={handleSendMessage}
               isSending={isSending}
@@ -323,7 +409,7 @@ export function ChatContainer({
           ) : (
             <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-center gap-2 text-slate-500">
               <AlertCircle className="w-4 h-4" />
-              <span className="text-sm">Chat ist geschlossen (Auftrag abgeschlossen)</span>
+              <span className="text-sm">Chat ist geschlossen (14 Tage nach Abschluss erreicht)</span>
             </div>
           )}
         </div>

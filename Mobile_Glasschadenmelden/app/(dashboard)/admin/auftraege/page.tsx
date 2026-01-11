@@ -30,7 +30,7 @@ interface Claim {
 const STATUS_OPTIONS: { value: ClaimStatus; label: string; color: string }[] = [
   { value: 'neu', label: 'Neu', color: 'bg-yellow-100 text-yellow-700' },
   { value: 'in_bearbeitung', label: 'In Bearbeitung', color: 'bg-blue-100 text-blue-700' },
-  { value: 'reparatur_abgeschlossen', label: 'Reparatur fertig', color: 'bg-purple-100 text-purple-700' },
+  { value: 'reparatur_abgeschlossen', label: 'Reparatur abgeschlossen', color: 'bg-purple-100 text-purple-700' },
   { value: 'abgeschlossen', label: 'Erledigt', color: 'bg-green-100 text-green-700' },
 ]
 
@@ -86,8 +86,47 @@ export default function AdminAuftraegePage() {
     if (error) {
       console.error('Error loading claims:', error)
       toast.error('Fehler beim Laden')
+      setIsLoading(false)
+      return
+    }
+
+    // Load versicherung and standort data for each claim
+    if (data && data.length > 0) {
+      const claimsWithDetails = await Promise.all(
+        data.map(async (claim) => {
+          let versicherungData = null
+          let standortData = null
+
+          // Load versicherung info
+          if (claim.versicherung_id) {
+            const { data: vers } = await supabase
+              .from('versicherungen')
+              .select('firma')
+              .eq('id', claim.versicherung_id)
+              .single()
+            versicherungData = vers
+          }
+
+          // Load standort info
+          if (claim.werkstatt_standort_id) {
+            const { data: standort } = await supabase
+              .from('werkstatt_standorte')
+              .select('name')
+              .eq('id', claim.werkstatt_standort_id)
+              .single()
+            standortData = standort
+          }
+
+          return {
+            ...claim,
+            versicherung: versicherungData,
+            standort: standortData
+          }
+        })
+      )
+      setClaims(claimsWithDetails)
     } else {
-      setClaims(data || [])
+      setClaims([])
     }
     setIsLoading(false)
   }
@@ -211,7 +250,7 @@ export default function AdminAuftraegePage() {
                         </h3>
                         <p className="text-sm text-slate-500">{claim.kennzeichen || 'Kein Kennzeichen'}</p>
                       </div>
-                      <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${statusOption?.color || ''}`}>
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap ${statusOption?.color || ''}`}>
                         {statusOption?.label}
                       </span>
                     </div>

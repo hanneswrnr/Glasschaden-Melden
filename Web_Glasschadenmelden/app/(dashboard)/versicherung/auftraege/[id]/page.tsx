@@ -172,7 +172,7 @@ export default function VersicherungAuftragDetailPage() {
         </Link>
         <div className="flex-1 min-w-0">
           <h1 className="text-lg font-bold text-slate-900 truncate">Auftragsdetails</h1>
-          <p className="text-xs text-slate-500 font-mono">{claim.auftragsnummer || `#${claim.id.slice(0, 8)}`}</p>
+          <p className="text-xs text-purple-600 font-mono">{claim.auftragsnummer || `#${claim.id.slice(0, 8)}`}</p>
         </div>
         {isEditing ? (
           <div className="flex items-center gap-2">
@@ -201,7 +201,7 @@ export default function VersicherungAuftragDetailPage() {
       </header>
 
       {/* Desktop Header */}
-      <header className="hidden md:navbar sticky top-0 z-50">
+      <header className="hidden md:block navbar">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
@@ -214,7 +214,7 @@ export default function VersicherungAuftragDetailPage() {
             </Link>
             <div>
               <h1 className="text-lg font-bold">Auftragsdetails</h1>
-              <p className="text-sm text-muted font-mono">{claim.auftragsnummer || `#${claim.id.slice(0, 8)}`}</p>
+              <p className="text-sm text-purple-600 font-mono">{claim.auftragsnummer || `#${claim.id.slice(0, 8)}`}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">

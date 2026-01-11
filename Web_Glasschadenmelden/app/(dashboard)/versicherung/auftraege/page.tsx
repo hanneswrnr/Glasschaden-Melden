@@ -23,7 +23,7 @@ interface Claim {
 const STATUS_OPTIONS: { value: ClaimStatus; label: string; color: string }[] = [
   { value: 'neu', label: 'Neu', color: 'bg-yellow-100 text-yellow-700' },
   { value: 'in_bearbeitung', label: 'In Bearbeitung', color: 'bg-blue-100 text-blue-700' },
-  { value: 'reparatur_abgeschlossen', label: 'Reparatur fertig', color: 'bg-purple-100 text-purple-700' },
+  { value: 'reparatur_abgeschlossen', label: 'Reparatur abgeschlossen', color: 'bg-purple-100 text-purple-700' },
   { value: 'abgeschlossen', label: 'Erledigt', color: 'bg-green-100 text-green-700' },
 ]
 
@@ -128,7 +128,7 @@ export default function VersicherungAuftraegePage() {
       </header>
 
       {/* Desktop Header */}
-      <header className="hidden md:navbar sticky top-0 z-50">
+      <header className="hidden md:block navbar">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/versicherung" className="btn-icon">
@@ -267,9 +267,9 @@ export default function VersicherungAuftraegePage() {
                       <p className="font-semibold text-slate-900 truncate">
                         {claim.kunde_vorname} {claim.kunde_nachname}
                       </p>
-                      <p className="text-xs text-slate-500 font-mono">{claim.auftragsnummer || '-'}</p>
+                      <p className="text-xs text-purple-600 font-mono">{claim.auftragsnummer || '-'}</p>
                     </div>
-                    <span className={`px-2 py-1 rounded-lg text-xs font-medium ${statusOption?.color || ''}`}>
+                    <span className={`px-2 py-1 rounded-lg text-xs font-medium whitespace-nowrap ${statusOption?.color || ''}`}>
                       {statusOption?.label || claim.status}
                     </span>
                   </div>
@@ -337,7 +337,7 @@ export default function VersicherungAuftraegePage() {
                           <p className="text-sm">{DAMAGE_TYPE_LABELS[claim.schadensart] || claim.schadensart}</p>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${statusOption?.color || ''}`}>
+                          <span className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap ${statusOption?.color || ''}`}>
                             {statusOption?.label || claim.status}
                           </span>
                         </td>

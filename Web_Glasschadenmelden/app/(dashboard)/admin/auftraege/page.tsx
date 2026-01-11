@@ -33,7 +33,7 @@ interface Claim {
 const STATUS_OPTIONS: { value: ClaimStatus; label: string; color: string }[] = [
   { value: 'neu', label: 'Neu', color: 'bg-yellow-100 text-yellow-700' },
   { value: 'in_bearbeitung', label: 'In Bearbeitung', color: 'bg-blue-100 text-blue-700' },
-  { value: 'reparatur_abgeschlossen', label: 'Reparatur fertig', color: 'bg-purple-100 text-purple-700' },
+  { value: 'reparatur_abgeschlossen', label: 'Reparatur abgeschlossen', color: 'bg-purple-100 text-purple-700' },
   { value: 'abgeschlossen', label: 'Erledigt', color: 'bg-green-100 text-green-700' },
 ]
 
@@ -89,16 +89,61 @@ export default function AdminAuftraegePage() {
     if (error) {
       console.error('Error loading claims:', error)
       toast.error('Fehler beim Laden der Aufträge')
+      setIsLoading(false)
+      return
+    }
+
+    // Load versicherung and standort data for each claim
+    if (data && data.length > 0) {
+      const claimsWithDetails = await Promise.all(
+        data.map(async (claim) => {
+          let versicherungData = null
+          let standortData = null
+
+          // Load versicherung info
+          if (claim.versicherung_id) {
+            const { data: vers } = await supabase
+              .from('versicherungen')
+              .select('firma, ansprechpartner')
+              .eq('id', claim.versicherung_id)
+              .single()
+            versicherungData = vers
+          }
+
+          // Load standort info
+          if (claim.werkstatt_standort_id) {
+            const { data: standort } = await supabase
+              .from('werkstatt_standorte')
+              .select('name')
+              .eq('id', claim.werkstatt_standort_id)
+              .single()
+            standortData = standort
+          }
+
+          return {
+            ...claim,
+            versicherung: versicherungData,
+            standort: standortData
+          }
+        })
+      )
+      setClaims(claimsWithDetails)
     } else {
-      setClaims(data || [])
+      setClaims([])
     }
     setIsLoading(false)
   }
 
   async function handleStatusChange(claimId: string, newStatus: ClaimStatus) {
+    // Set completed_at when status changes to 'abgeschlossen', reset to null otherwise
+    const updateData = {
+      status: newStatus,
+      updated_at: new Date().toISOString(),
+      completed_at: newStatus === 'abgeschlossen' ? new Date().toISOString() : null
+    }
     const { error } = await supabase
       .from('claims')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .update(updateData)
       .eq('id', claimId)
 
     if (error) {
@@ -171,7 +216,7 @@ export default function AdminAuftraegePage() {
       </header>
 
       {/* Desktop Header */}
-      <header className="hidden md:navbar sticky top-0 z-50">
+      <header className="hidden md:block navbar">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/admin" className="btn-icon">
@@ -308,7 +353,7 @@ export default function AdminAuftraegePage() {
                         </p>
                         <p className="text-xs text-red-600 font-mono">{claim.auftragsnummer || '-'}</p>
                       </div>
-                      <span className={`px-2 py-1 rounded-lg text-xs font-medium ${statusOption?.color || ''}`}>
+                      <span className={`px-2 py-1 rounded-lg text-xs font-medium whitespace-nowrap ${statusOption?.color || ''}`}>
                         {statusOption?.label || claim.status}
                       </span>
                     </div>
@@ -320,6 +365,15 @@ export default function AdminAuftraegePage() {
                       <div>
                         <p className="text-slate-500 text-xs">Schadensart</p>
                         <p className="font-medium truncate">{DAMAGE_TYPE_LABELS[claim.schadensart] || claim.schadensart}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-slate-500 truncate">
+                          <span className="text-purple-600 font-medium">{claim.versicherung?.firma || '-'}</span>
+                          {' → '}
+                          <span className="text-green-600 font-medium">{claim.standort?.name || 'Keine Werkstatt'}</span>
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">

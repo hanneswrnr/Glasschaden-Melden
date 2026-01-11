@@ -19,6 +19,9 @@ export function MessageBubble({ message, isOwn, showSender }: MessageBubbleProps
   const senderRole = message.sender?.role || 'versicherung'
   const roleColors = CHAT_ROLE_COLORS[senderRole]
   const senderName = message.sender?.display_name || message.sender?.company_name || ROLE_LABELS[senderRole]
+  const senderAddress = message.sender?.address
+  // Format: "Name - Adresse" or just "Name" if no address
+  const senderDisplay = senderAddress ? `${senderName} - ${senderAddress}` : senderName
 
   const time = new Date(message.created_at).toLocaleTimeString('de-DE', {
     hour: '2-digit',
@@ -32,11 +35,13 @@ export function MessageBubble({ message, isOwn, showSender }: MessageBubbleProps
       <div className={`max-w-[85%] md:max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
         {/* Sender info */}
         {showSender && !isOwn && (
-          <div className="flex items-center gap-2 mb-1 ml-1">
+          <div className="flex items-center gap-2 mb-1 ml-1 flex-wrap">
             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${roleColors.badge}`}>
               {ROLE_LABELS[senderRole]}
             </span>
-            <span className="text-xs text-slate-500">{senderName}</span>
+            {senderRole !== 'admin' && (
+              <span className="text-xs text-slate-500">{senderDisplay}</span>
+            )}
           </div>
         )}
 

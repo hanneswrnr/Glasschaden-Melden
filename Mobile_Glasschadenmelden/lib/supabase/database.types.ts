@@ -494,11 +494,12 @@ export interface ChatMessage {
   sender_id: string
   message: string
   created_at: string
-  // Joined data from profiles
+  // Joined data from profiles + versicherungen/werkstatt_standorte
   sender?: {
     id: string
     display_name: string | null
     company_name: string | null
+    address?: string | null
     role: UserRole
   }
   // Joined attachments

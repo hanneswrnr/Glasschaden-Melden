@@ -18,6 +18,8 @@ interface StatusSelectProps {
   className?: string
 }
 
+const DROPDOWN_WIDTH = 260
+
 export function StatusSelect({
   options,
   value,
@@ -26,30 +28,45 @@ export function StatusSelect({
   className = '',
 }: StatusSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 })
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: DROPDOWN_WIDTH })
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const selectedOption = options.find((opt) => opt.value === value)
 
+  // Handle click outside to close dropdown
   useEffect(() => {
+    if (!isOpen) return
+
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      const isClickInsideDropdown = dropdownRef.current?.contains(target)
+      const isClickInsideButton = buttonRef.current?.contains(target)
+
+      if (!isClickInsideDropdown && !isClickInsideButton) {
         setIsOpen(false)
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    // Use setTimeout to avoid immediate closing when opening
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside)
+    }, 0)
+
+    return () => {
+      clearTimeout(timeoutId)
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
 
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
       setDropdownPosition({
         top: rect.bottom + window.scrollY + 8,
-        left: rect.right + window.scrollX - 200,
-        width: 200,
+        left: rect.right + window.scrollX - DROPDOWN_WIDTH,
+        width: DROPDOWN_WIDTH,
       })
     }
   }, [isOpen])
@@ -64,18 +81,7 @@ export function StatusSelect({
 
   const dropdownMenu = isOpen && typeof document !== 'undefined' ? createPortal(
     <div
-      ref={(el) => {
-        // Handle click outside for portal
-        if (el) {
-          const handlePortalClick = (e: MouseEvent) => {
-            if (!el.contains(e.target as Node) && !buttonRef.current?.contains(e.target as Node)) {
-              setIsOpen(false)
-            }
-          }
-          document.addEventListener('mousedown', handlePortalClick)
-          return () => document.removeEventListener('mousedown', handlePortalClick)
-        }
-      }}
+      ref={dropdownRef}
       className="fixed bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden"
       style={{
         top: dropdownPosition.top,
@@ -100,7 +106,7 @@ export function StatusSelect({
             ${option.value === value ? 'bg-slate-50' : ''}
           `}
         >
-          <span className={`px-3 py-1 rounded-lg text-sm font-medium ${option.color}`}>
+          <span className={`px-3 py-1 rounded-lg text-sm font-medium whitespace-nowrap ${option.color}`}>
             {option.label}
           </span>
           {option.value === value && (
@@ -127,7 +133,7 @@ export function StatusSelect({
           hover:opacity-90
         `}
       >
-        <span>{selectedOption?.label}</span>
+        <span className="whitespace-nowrap">{selectedOption?.label}</span>
         <ChevronDown
           className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
         />

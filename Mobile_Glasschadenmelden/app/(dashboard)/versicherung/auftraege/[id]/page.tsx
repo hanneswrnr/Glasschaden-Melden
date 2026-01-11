@@ -181,7 +181,7 @@ export default function VersicherungAuftragDetailPage() {
         </Link>
         <div className="flex-1 min-w-0">
           <h1 className="font-semibold text-lg truncate">Auftrag Details</h1>
-          <p className="text-xs text-slate-500 font-mono">{claim.auftragsnummer || `#${claim.id.slice(0, 8)}`}</p>
+          <p className="text-xs text-purple-600 font-mono">{claim.auftragsnummer || `#${claim.id.slice(0, 8)}`}</p>
         </div>
         {isEditing ? (
           <div className="flex items-center gap-2">

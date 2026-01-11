@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { X, AlertTriangle, Trash2, Edit3 } from 'lucide-react'
+import { DeleteSuccessAnimation } from '@/components/shared/DeleteSuccessAnimation'
 
 interface ProfileEditModalProps {
   isOpen: boolean
@@ -45,6 +46,7 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave, hideDe
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false)
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -252,40 +254,21 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave, hideDe
     setIsDeleting(true)
 
     try {
-      if (role === 'versicherung') {
-        await supabase
-          .from('versicherungen')
-          .delete()
-          .eq('user_id', userId)
-      } else if (role === 'werkstatt') {
-        const { data: werkstatt } = await supabase
-          .from('werkstaetten')
-          .select('id')
-          .eq('user_id', userId)
-          .single()
+      // Call the RPC function to completely delete the user
+      const { error: deleteError } = await supabase.rpc('delete_user_completely', {
+        user_id_to_delete: userId
+      })
 
-        if (werkstatt) {
-          await supabase
-            .from('werkstatt_standorte')
-            .delete()
-            .eq('werkstatt_id', werkstatt.id)
-
-          await supabase
-            .from('werkstaetten')
-            .delete()
-            .eq('id', werkstatt.id)
-        }
+      if (deleteError) {
+        throw deleteError
       }
 
-      await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId)
-
+      // Sign out the user
       await supabase.auth.signOut()
 
-      toast.success('Ihr Konto wurde erfolgreich gelöscht')
-      router.push('/')
+      // Show success animation
+      setShowDeleteConfirm(false)
+      setShowDeleteSuccess(true)
     } catch (error) {
       console.error('Error deleting account:', error)
       toast.error('Fehler beim Löschen des Kontos. Bitte kontaktieren Sie den Support.')
@@ -300,7 +283,12 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave, hideDe
     return 'Standorte verwalten'
   }
 
-  if (!isOpen) return null
+  if (!isOpen && !showDeleteSuccess) return null
+
+  // Delete success animation
+  if (showDeleteSuccess) {
+    return <DeleteSuccessAnimation show={showDeleteSuccess} />
+  }
 
   // Delete confirmation modal
   if (showDeleteConfirm) {

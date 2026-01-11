@@ -121,6 +121,20 @@ export function StandortManageModal({ isOpen, onClose, werkstattId, onUpdate, ed
     setIsSaving(true)
 
     if (isAddingNew) {
+      // Prüfe auf Duplikat über alle Werkstätten hinweg
+      const { data: existingStandort, error: checkError } = await supabase
+        .from('werkstatt_standorte')
+        .select('id, name')
+        .ilike('name', formData.name)
+        .limit(1)
+        .single()
+
+      if (existingStandort && !checkError) {
+        toast.error('Ein Standort mit diesem Namen existiert bereits. Bitte wählen Sie einen anderen Namen.')
+        setIsSaving(false)
+        return
+      }
+
       // Create new standort
       const isFirstStandort = standorte.length === 0
       const { error } = await supabase

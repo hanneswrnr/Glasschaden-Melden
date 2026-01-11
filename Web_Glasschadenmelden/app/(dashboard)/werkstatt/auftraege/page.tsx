@@ -26,7 +26,7 @@ interface Claim {
 const STATUS_OPTIONS: { value: ClaimStatus; label: string; color: string }[] = [
   { value: 'neu', label: 'Neu', color: 'bg-yellow-100 text-yellow-700' },
   { value: 'in_bearbeitung', label: 'In Bearbeitung', color: 'bg-blue-100 text-blue-700' },
-  { value: 'reparatur_abgeschlossen', label: 'Reparatur fertig', color: 'bg-purple-100 text-purple-700' },
+  { value: 'reparatur_abgeschlossen', label: 'Reparatur abgeschlossen', color: 'bg-purple-100 text-purple-700' },
   { value: 'abgeschlossen', label: 'Erledigt', color: 'bg-green-100 text-green-700' },
 ]
 
@@ -114,9 +114,15 @@ export default function WerkstattAuftraegePage() {
   }
 
   async function handleStatusChange(claimId: string, newStatus: ClaimStatus) {
+    // Set completed_at when status changes to 'abgeschlossen', reset to null otherwise
+    const updateData = {
+      status: newStatus,
+      updated_at: new Date().toISOString(),
+      completed_at: newStatus === 'abgeschlossen' ? new Date().toISOString() : null
+    }
     const { error } = await supabase
       .from('claims')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .update(updateData)
       .eq('id', claimId)
 
     if (error) {
@@ -314,7 +320,7 @@ export default function WerkstattAuftraegePage() {
                         <h3 className="font-semibold text-slate-900 truncate">{claim.kunde_vorname} {claim.kunde_nachname}</h3>
                         <p className="text-sm text-slate-500">{claim.kennzeichen || '-'}</p>
                       </div>
-                      <span className={`px-2.5 py-1 rounded-lg text-xs font-medium flex-shrink-0 ml-2 ${statusOption?.color || ''}`}>
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-medium flex-shrink-0 ml-2 whitespace-nowrap ${statusOption?.color || ''}`}>
                         {statusOption?.label}
                       </span>
                     </div>

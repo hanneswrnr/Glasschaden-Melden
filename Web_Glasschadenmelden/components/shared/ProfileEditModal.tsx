@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { getSupabaseClient } from '@/lib/supabase/client'
+import { DeleteSuccessAnimation } from '@/components/shared/DeleteSuccessAnimation'
 
 interface ProfileEditModalProps {
   isOpen: boolean
@@ -38,6 +39,7 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false)
 
   // Versicherung data
   const [versicherungData, setVersicherungData] = useState<VersicherungData>({
@@ -195,49 +197,21 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
     setIsDeleting(true)
 
     try {
-      // Delete role-specific data first
-      if (role === 'versicherung') {
-        // Delete versicherung record
-        await supabase
-          .from('versicherungen')
-          .delete()
-          .eq('user_id', userId)
-      } else if (role === 'werkstatt') {
-        // Get werkstatt ID first
-        const { data: werkstatt } = await supabase
-          .from('werkstaetten')
-          .select('id')
-          .eq('user_id', userId)
-          .single()
+      // Call the RPC function to completely delete the user
+      const { error: deleteError } = await supabase.rpc('delete_user_completely', {
+        user_id_to_delete: userId
+      })
 
-        if (werkstatt) {
-          // Delete all standorte
-          await supabase
-            .from('werkstatt_standorte')
-            .delete()
-            .eq('werkstatt_id', werkstatt.id)
-
-          // Delete werkstatt record
-          await supabase
-            .from('werkstaetten')
-            .delete()
-            .eq('id', werkstatt.id)
-        }
+      if (deleteError) {
+        throw deleteError
       }
-
-      // Delete profile
-      await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId)
 
       // Sign out the user
       await supabase.auth.signOut()
 
-      toast.success('Ihr Konto wurde erfolgreich gelöscht')
-
-      // Redirect to home page
-      router.push('/')
+      // Show success animation
+      setShowDeleteConfirm(false)
+      setShowDeleteSuccess(true)
     } catch (error) {
       console.error('Error deleting account:', error)
       toast.error('Fehler beim Löschen des Kontos. Bitte kontaktieren Sie den Support.')
@@ -245,7 +219,12 @@ export function ProfileEditModal({ isOpen, onClose, role, userId, onSave }: Prof
     }
   }
 
-  if (!isOpen) return null
+  if (!isOpen && !showDeleteSuccess) return null
+
+  // Delete success animation
+  if (showDeleteSuccess) {
+    return <DeleteSuccessAnimation show={showDeleteSuccess} />
+  }
 
   // Delete confirmation modal
   if (showDeleteConfirm) {

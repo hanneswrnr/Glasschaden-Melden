@@ -91,6 +91,36 @@ export function BottomNavigation() {
     }
   }, [supabase])
 
+  // Refetch role when navigating to dashboard routes
+  // This ensures the correct role is displayed after registration redirect
+  useEffect(() => {
+    const isDashboardRoute = pathname.startsWith('/werkstatt') ||
+                             pathname.startsWith('/versicherung') ||
+                             pathname.startsWith('/admin')
+
+    if (isDashboardRoute && isLoggedIn) {
+      // Small delay to ensure profile update has completed
+      const refetchRole = async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+
+          if (profile && profile.role !== userRole) {
+            setUserRole(profile.role)
+          }
+        }
+      }
+
+      // Delay to ensure the profile update from registration has completed
+      const timeoutId = setTimeout(refetchRole, 300)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [pathname, isLoggedIn, supabase, userRole])
+
   // Get dashboard path based on role
   const getDashboardPath = () => {
     switch (userRole) {

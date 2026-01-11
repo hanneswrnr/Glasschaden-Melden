@@ -5,11 +5,16 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { getSupabaseClient } from '@/lib/supabase/client'
+import { WelcomeAnimation } from '@/components/shared/WelcomeAnimation'
+import { EmailErrorAnimation } from '@/components/shared/EmailErrorAnimation'
 
 export default function RegisterWerkstattPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false)
   const [step, setStep] = useState(1)
+  const [showWelcome, setShowWelcome] = useState(false)
+  const [showEmailError, setShowEmailError] = useState(false)
   const [formData, setFormData] = useState({
     // Account
     email: '',
@@ -47,7 +52,14 @@ export default function RegisterWerkstattPage() {
       })
 
       if (authError) {
-        toast.error(`Registrierung fehlgeschlagen: ${authError.message}`)
+        // Prüfe auf bekannte Fehlermeldungen und zeige benutzerfreundliche Meldung
+        if (authError.message.includes('User already registered') ||
+            authError.message.includes('already been registered') ||
+            authError.message.includes('already exists')) {
+          toast.error('Diese E-Mail-Adresse wird bereits verwendet. Bitte verwenden Sie eine andere E-Mail oder melden Sie sich an.')
+        } else {
+          toast.error(`Registrierung fehlgeschlagen: ${authError.message}`)
+        }
         return
       }
 
@@ -57,22 +69,49 @@ export default function RegisterWerkstattPage() {
       }
 
       // 2. Update Profil mit Rolle und Display-Daten
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          role: 'werkstatt',
-          display_name: formData.ansprechpartner,
-          company_name: formData.standortName,
-          phone: formData.telefon,
-          address: formData.adresse,
-        })
-        .eq('id', authData.user.id)
+      // Warten bis das Profil vom Trigger erstellt wurde
+      let profileUpdated = false
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const { data: updatedProfile, error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            role: 'werkstatt',
+            display_name: formData.ansprechpartner,
+            company_name: formData.standortName,
+            phone: formData.telefon,
+            address: formData.adresse,
+          })
+          .eq('id', authData.user.id)
+          .select()
+          .single()
 
-      if (profileError) {
-        console.error('Profile update error:', profileError)
+        if (!profileError && updatedProfile) {
+          profileUpdated = true
+          break
+        }
+
+        // Warte 200ms bevor wir es erneut versuchen
+        await new Promise(resolve => setTimeout(resolve, 200))
       }
 
-      // 3. Erstelle Werkstatt
+      if (!profileUpdated) {
+        console.error('Profile update failed after 5 attempts')
+      }
+
+      // 3. Prüfe auf Standort-Duplikat
+      const { data: existingStandort } = await supabase
+        .from('werkstatt_standorte')
+        .select('id, name')
+        .ilike('name', formData.standortName)
+        .limit(1)
+        .maybeSingle()
+
+      if (existingStandort) {
+        toast.error('Ein Standort mit diesem Namen existiert bereits. Bitte wählen Sie einen anderen Namen.')
+        return
+      }
+
+      // 4. Erstelle Werkstatt
       const { data: werkstattData, error: werkstattError } = await supabase
         .from('werkstaetten')
         .insert({
@@ -86,7 +125,7 @@ export default function RegisterWerkstattPage() {
         return
       }
 
-      // 4. Erstelle ersten Standort
+      // 5. Erstelle ersten Standort
       const { error: standortError } = await supabase
         .from('werkstatt_standorte')
         .insert({
@@ -103,8 +142,7 @@ export default function RegisterWerkstattPage() {
         return
       }
 
-      toast.success('Registrierung erfolgreich!')
-      router.push('/werkstatt')
+      setShowWelcome(true)
     } catch (error) {
       console.error('Registration error:', error)
       toast.error('Ein Fehler ist aufgetreten')
@@ -113,7 +151,7 @@ export default function RegisterWerkstattPage() {
     }
   }
 
-  function nextStep() {
+  async function nextStep() {
     if (step === 1) {
       if (!formData.email || !formData.password || !formData.confirmPassword) {
         toast.error('Bitte alle Felder ausfüllen')
@@ -127,6 +165,27 @@ export default function RegisterWerkstattPage() {
         toast.error('Passwort muss mindestens 8 Zeichen haben')
         return
       }
+
+      // Prüfe ob E-Mail bereits in auth.users registriert ist
+      setIsCheckingEmail(true)
+      try {
+        const { data: emailExists, error: rpcError } = await supabase.rpc('check_email_exists', {
+          email_to_check: formData.email
+        })
+
+        if (rpcError) {
+          console.error('RPC error:', rpcError)
+        }
+
+        if (emailExists) {
+          setShowEmailError(true)
+          setIsCheckingEmail(false)
+          return
+        }
+      } catch (error) {
+        console.error('Email check error:', error)
+      }
+      setIsCheckingEmail(false)
     }
     setStep(step + 1)
   }
@@ -309,12 +368,26 @@ export default function RegisterWerkstattPage() {
                   <button
                     type="button"
                     onClick={nextStep}
+                    disabled={isCheckingEmail}
                     className="btn-primary flex-1"
                   >
-                    Weiter
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
+                    {isCheckingEmail ? (
+                      <span className="flex items-center gap-2">
+                        <div className="spinner-dots">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                        Prüfe E-Mail...
+                      </span>
+                    ) : (
+                      <>
+                        Weiter
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </>
+                    )}
                   </button>
                 ) : (
                   <button
@@ -341,6 +414,19 @@ export default function RegisterWerkstattPage() {
           </div>
         </div>
       </main>
+
+      {/* Animations */}
+      <WelcomeAnimation
+        show={showWelcome}
+        role="werkstatt"
+        userName={formData.ansprechpartner}
+        redirectTo="/werkstatt"
+      />
+      <EmailErrorAnimation
+        show={showEmailError}
+        email={formData.email}
+        onClose={() => setShowEmailError(false)}
+      />
     </div>
   )
 }

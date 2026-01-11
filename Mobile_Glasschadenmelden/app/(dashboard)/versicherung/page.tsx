@@ -30,6 +30,7 @@ export default function VersicherungDashboard() {
   const router = useRouter()
   const [versicherung, setVersicherung] = useState<Versicherung | null>(null)
   const [claims, setClaims] = useState<Claim[]>([])
+  const [allClaims, setAllClaims] = useState<Claim[]>([])
   const [stats, setStats] = useState({ total: 0, neu: 0, inBearbeitung: 0, abgeschlossen: 0 })
   const [isLoading, setIsLoading] = useState(true)
   const [userId, setUserId] = useState<string>('')
@@ -77,16 +78,17 @@ export default function VersicherungDashboard() {
   }
 
   async function loadClaims(versicherungId: string) {
+    // Load all claims for stats (no limit)
     const { data: claimsData } = await supabase
       .from('claims')
       .select('*')
       .eq('versicherung_id', versicherungId)
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
-      .limit(10)
 
     if (claimsData) {
-      setClaims(claimsData)
+      setAllClaims(claimsData)
+      setClaims(claimsData.slice(0, 5)) // Only show first 5 in dashboard
       setStats({
         total: claimsData.length,
         neu: claimsData.filter(c => c.status === 'neu').length,

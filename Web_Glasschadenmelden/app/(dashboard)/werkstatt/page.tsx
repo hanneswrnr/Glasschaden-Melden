@@ -458,9 +458,9 @@ export default function WerkstattDashboard() {
         </button>
 
         {/* Desktop Grid Layout */}
-        <div className="hidden md:grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="hidden md:grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           {/* Standorte */}
-          <div className="card p-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+          <div className="card p-6 animate-fade-in-up self-start" style={{ animationDelay: '0.3s' }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="heading-3">Standorte</h3>
               <button

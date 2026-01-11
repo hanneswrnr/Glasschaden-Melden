@@ -6,10 +6,13 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { ArrowLeft, Lock, Mail, ChevronRight, Building2, Wrench } from 'lucide-react'
+import { LoginErrorAnimation } from '@/components/shared/LoginErrorAnimation'
 
 export default function LoginPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [showLoginError, setShowLoginError] = useState(false)
+  const [loginErrorType, setLoginErrorType] = useState<'invalid_credentials' | 'email_not_confirmed' | 'user_not_found' | 'generic'>('invalid_credentials')
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -28,7 +31,21 @@ export default function LoginPage() {
       })
 
       if (error) {
-        toast.error(`Login fehlgeschlagen: ${error.message}`)
+        console.error('Login error details:', error)
+        // Bessere Fehlermeldungen für häufige Probleme
+        if (error.message.includes('Invalid login credentials')) {
+          setLoginErrorType('invalid_credentials')
+          setShowLoginError(true)
+        } else if (error.message.includes('Email not confirmed')) {
+          setLoginErrorType('email_not_confirmed')
+          setShowLoginError(true)
+        } else if (error.message.includes('User not found')) {
+          setLoginErrorType('user_not_found')
+          setShowLoginError(true)
+        } else {
+          setLoginErrorType('generic')
+          setShowLoginError(true)
+        }
         return
       }
 
@@ -180,6 +197,13 @@ export default function LoginPage() {
         </div>
 
       </main>
+
+      {/* Login Error Animation */}
+      <LoginErrorAnimation
+        show={showLoginError}
+        errorType={loginErrorType}
+        onClose={() => setShowLoginError(false)}
+      />
     </div>
   )
 }

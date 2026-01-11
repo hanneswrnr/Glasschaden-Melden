@@ -181,7 +181,7 @@ export default function ProvisionDetailPage() {
             </Link>
             <div>
               <h1 className="text-lg font-bold">Provisionsdetails</h1>
-              <p className="text-sm text-muted font-mono">{claim.auftragsnummer || `#${claim.id.slice(0, 8)}`}</p>
+              <p className="text-sm text-orange-600 font-mono">{claim.auftragsnummer || `#${claim.id.slice(0, 8)}`}</p>
             </div>
           </div>
         </div>
@@ -196,7 +196,7 @@ export default function ProvisionDetailPage() {
               <p className="text-muted">{claim.kennzeichen || 'Kein Kennzeichen'}</p>
             </div>
             <div className="text-right">
-              <p className="text-3xl font-bold text-green-600">{provision.toFixed(2)} EUR</p>
+              <p className="text-3xl font-bold text-green-600 whitespace-nowrap">{provision.toFixed(2)} EUR</p>
               <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium mt-2 ${
                 claim.payment_status === 'bezahlt'
                   ? 'bg-green-100 text-green-700'

@@ -183,7 +183,7 @@ export default function WerkstattPapierkorbPage() {
       </header>
 
       {/* Desktop Header */}
-      <header className="hidden md:navbar sticky top-0 z-50">
+      <header className="hidden md:block navbar">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/werkstatt/auftraege" className="btn-icon">

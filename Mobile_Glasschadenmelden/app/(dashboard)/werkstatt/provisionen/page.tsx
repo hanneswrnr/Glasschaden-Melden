@@ -198,7 +198,7 @@ export default function ProvisionenPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-orange-100 text-sm mb-1">Offene Summe</p>
-              <p className="text-3xl font-bold">{unpaidTotal.toFixed(2)} EUR</p>
+              <p className="text-3xl font-bold whitespace-nowrap">{unpaidTotal.toFixed(2)} EUR</p>
             </div>
             <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
               <DollarSign className="w-7 h-7 text-white" />
@@ -307,7 +307,7 @@ export default function ProvisionenPage() {
                     <span className="text-slate-500">
                       {DAMAGE_TYPE_LABELS[claim.schadensart] || claim.schadensart}
                     </span>
-                    <span className="font-bold text-green-600">
+                    <span className="font-bold text-green-600 whitespace-nowrap">
                       {getProvision(claim.schadensart).toFixed(2)} EUR
                     </span>
                   </div>

@@ -219,7 +219,7 @@ export default function ProvisionenPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-orange-100 text-sm mb-1">Offene Summe</p>
-              <p className="text-3xl font-bold">{unpaidTotal.toFixed(2)} EUR</p>
+              <p className="text-3xl font-bold whitespace-nowrap">{unpaidTotal.toFixed(2)} EUR</p>
             </div>
             <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
               <DollarSign className="w-7 h-7 text-white" />
@@ -277,7 +277,7 @@ export default function ProvisionenPage() {
                 <DollarSign className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{unpaidTotal.toFixed(2)} EUR</p>
+                <p className="text-2xl font-bold whitespace-nowrap">{unpaidTotal.toFixed(2)} EUR</p>
                 <p className="text-sm text-muted">Offene Summe</p>
               </div>
             </div>
@@ -447,7 +447,7 @@ export default function ProvisionenPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link href={`/werkstatt/provisionen/${claim.id}`} className="block">
-                        <span className="font-bold text-green-600">{getProvision(claim.schadensart).toFixed(2)} EUR</span>
+                        <span className="font-bold text-green-600 whitespace-nowrap">{getProvision(claim.schadensart).toFixed(2)} EUR</span>
                       </Link>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -485,7 +485,7 @@ export default function ProvisionenPage() {
               <tfoot className="bg-[hsl(var(--muted))] font-semibold">
                 <tr>
                   <td colSpan={3} className="px-6 py-4">Summe ({filteredClaims.length} Aufträge)</td>
-                  <td className="px-6 py-4 text-right text-green-600">{totalProvision.toFixed(2)} EUR</td>
+                  <td className="px-6 py-4 text-right text-green-600 whitespace-nowrap">{totalProvision.toFixed(2)} EUR</td>
                   <td colSpan={2}></td>
                 </tr>
               </tfoot>

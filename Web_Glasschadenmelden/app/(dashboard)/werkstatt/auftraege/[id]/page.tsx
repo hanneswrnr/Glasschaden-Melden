@@ -151,9 +151,15 @@ export default function AuftragDetailPage() {
     setIsSaving(true)
 
     // Build update query - only update if werkstatt has access
+    // Set completed_at when status changes to 'abgeschlossen', reset to null otherwise
+    const updateData = {
+      status: newStatus,
+      updated_at: new Date().toISOString(),
+      completed_at: newStatus === 'abgeschlossen' ? new Date().toISOString() : null
+    }
     let updateQuery = supabase
       .from('claims')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .update(updateData)
       .eq('id', claim.id)
 
     // Add standort filter if claim has one and user has standorte
@@ -169,7 +175,11 @@ export default function AuftragDetailPage() {
     } else if (!data || data.length === 0) {
       toast.error('Keine Berechtigung für diese Änderung')
     } else {
-      setClaim({ ...claim, status: newStatus })
+      setClaim({
+        ...claim,
+        status: newStatus,
+        completed_at: newStatus === 'abgeschlossen' ? new Date().toISOString() : null
+      })
       showStatus(CLAIM_STATUS_LABELS[newStatus], STATUS_COLOR_MAP[newStatus])
     }
     setIsSaving(false)
@@ -261,7 +271,7 @@ export default function AuftragDetailPage() {
           </Link>
           <div className="min-w-0">
             <h1 className="font-semibold text-base">Auftrag Details</h1>
-            <p className="text-xs text-slate-500 font-mono truncate">{claim.auftragsnummer || `#${claim.id.slice(0, 8)}`}</p>
+            <p className="text-xs text-orange-600 font-mono truncate">{claim.auftragsnummer || `#${claim.id.slice(0, 8)}`}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -320,7 +330,7 @@ export default function AuftragDetailPage() {
             </Link>
             <div>
               <h1 className="text-lg font-bold">Auftrag Details</h1>
-              <p className="text-sm text-muted font-mono">{claim.auftragsnummer || `#${claim.id.slice(0, 8)}`}</p>
+              <p className="text-sm text-orange-600 font-mono">{claim.auftragsnummer || `#${claim.id.slice(0, 8)}`}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
